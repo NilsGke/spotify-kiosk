@@ -3,7 +3,10 @@ import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
 
 export async function OPTIONS(req: NextRequest) {
-  console.log("\x1b[32mgot a post from spotify");
+  console.log(req.body);
+  console.log(await req.text());
+  console.log(await req.json());
+
   const token = (await req.json()) as {
     access_token: string;
     token_type: "Bearer";
