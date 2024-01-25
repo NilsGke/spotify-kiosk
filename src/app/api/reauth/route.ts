@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
 
-export async function OPTIONS(req: NextRequest) {
+export async function POST(req: NextRequest) {
   const token = (await req.json()) as {
     access_token: string;
     token_type: "Bearer";
@@ -11,8 +11,6 @@ export async function OPTIONS(req: NextRequest) {
     scope: string;
     expires: number;
   };
-
-  console.log(token, req);
 
   const session = await getServerAuthSession();
   if (session === null)
@@ -28,8 +26,6 @@ export async function OPTIONS(req: NextRequest) {
       scope: token.scope,
     },
   });
-
-  console.log("\x1b[32mREAUTHENTICATED USER \x1b[0m");
 
   return new NextResponse("ok");
 }

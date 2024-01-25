@@ -1,17 +1,10 @@
 "use client";
 
-import type { SpotifySession } from "@prisma/client";
-import { SpotifyApi } from "@spotify/web-api-ts-sdk";
 import { useState } from "react";
-import toast from "react-simple-toasts";
 import { env } from "~/env";
 import { api } from "~/trpc/react";
 
-export default function ReauthPopup({
-  session,
-}: {
-  session: Pick<SpotifySession, "code">;
-}) {
+export default function ReauthPopup() {
   const query = api.session.checkExpiration.useQuery();
 
   const [collapsed, setCollapsed] = useState(false);
@@ -43,17 +36,16 @@ export default function ReauthPopup({
         <h3 className="">You need to Reauthenticate yourself</h3>
         <button
           className="rounded border border-zinc-500 p-2 hover:brightness-90 active:brightness-75"
-          onClick={() =>
-            SpotifyApi.performUserAuthorization(
-              env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID,
-              env.NEXT_PUBLIC_APP_URL + "/",
-              ["user-read-playback-state", "user-modify-playback-state"],
-              env.NEXT_PUBLIC_SPOTIFY_AUTH_CALLBACK_URL,
-            ).catch((e) => {
-              console.error(e);
-              toast("Failed to reauthenticate.");
-            })
-          }
+          onClick={() => {
+            localStorage.removeItem(
+              "spotify-sdk:AuthorizationCodeWithPKCEStrategy:token",
+            );
+            window.open(
+              env.NEXT_PUBLIC_APP_URL + "/reauth",
+              "_blank",
+              "popup,height=700,width=550",
+            );
+          }}
         >
           Reauthenticate
         </button>
