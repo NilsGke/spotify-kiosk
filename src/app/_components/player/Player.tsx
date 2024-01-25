@@ -19,10 +19,14 @@ export default function Player({
 }) {
   const sessionQuery = api.session.get.useQuery(
     { code, password },
-    {
-      refetchInterval: 10000,
-    },
+    { refetchInterval: 60000 },
   );
+
+  const { refetch: refetchPlayback, data: playbackState } =
+    api.spotify.getPlayback.useQuery({
+      code,
+      password,
+    });
 
   return (
     <>
@@ -32,14 +36,19 @@ export default function Player({
         <Search />
 
         <div className="row-span-2">
-          <CurrentSong />
+          <CurrentSong playbackState={playbackState} />
         </div>
 
         <SessionControls />
 
-        <PlayControls session={sessionQuery.data} />
+        <PlayControls
+          isAdmin={admin}
+          session={sessionQuery.data}
+          playbackState={playbackState}
+          refreshPlayback={refetchPlayback}
+        />
       </div>
-      {sessionQuery.isSuccess && <ReauthPopup session={sessionQuery.data} />}
+      {admin && <ReauthPopup />}
     </>
   );
 }

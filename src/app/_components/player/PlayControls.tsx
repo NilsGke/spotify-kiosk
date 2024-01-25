@@ -2,42 +2,123 @@
 
 import type { SpotifySession } from "@prisma/client";
 import Container from "./Container";
+import { IoMdPlayCircle } from "react-icons/io";
+import { MdPauseCircle } from "react-icons/md";
+import { MdCircle } from "react-icons/md";
+import { IoMdSkipForward } from "react-icons/io";
+import { IoMdSkipBackward } from "react-icons/io";
+import type { PlaybackState } from "@spotify/web-api-ts-sdk";
+import { twMerge } from "tailwind-merge";
 import { api } from "~/trpc/react";
-import { useEffect } from "react";
-import Spinner from "../Spinner";
-import checkForTokenError from "~/helpers/checkForTokenError";
-import { hostNeedsToReauthToast } from "~/helpers/reauthToast";
 
 export default function PlayControls({
   session,
+  playbackState,
+  refreshPlayback,
+  isAdmin,
 }: {
   session: SpotifySession | undefined;
+  playbackState: PlaybackState | undefined;
+  refreshPlayback: () => void;
+  isAdmin: boolean;
 }) {
-  if (session === undefined)
-    return (
-      <Container>
-        <Spinner />
-      </Container>
-    );
+  const playPauseMutation = api.spotify.togglePlayPause.useMutation({
+    onSuccess: refreshPlayback,
+  });
+
+  const skipForwardMutation = api.spotify.skipForward.useMutation({
+    onSuccess: refreshPlayback,
+  });
+
+  const skipBackwardMutation = api.spotify.skipBackward.useMutation({
+    onSuccess: refreshPlayback,
+  });
+
+  const PlayIcon =
+    playbackState === undefined
+      ? MdCircle
+      : playbackState.is_playing
+        ? MdPauseCircle
+        : IoMdPlayCircle;
 
   return (
     <Container>
-      <Controls session={session} />
+      <div className="grid h-full w-full grid-cols-3 content-center justify-items-center">
+        <div className="grid w-full grid-cols-1 grid-rows-2 gap-2 text-xs">
+          <div
+            className={twMerge(
+              "",
+              session === undefined && "h-4 w-40 animate-pulse bg-zinc-800",
+            )}
+          >
+            {session?.name}
+          </div>
+          <div
+            className={twMerge(
+              "",
+              session === undefined && "h-4 w-40 animate-pulse bg-zinc-800",
+            )}
+          >
+            Session Code: {session?.code}
+          </div>
+        </div>
+        <div
+          className={twMerge(
+            "grid w-[165px] grid-cols-3 justify-items-center",
+            playbackState === undefined && "animate-pulse",
+          )}
+        >
+          <button
+            onClick={() =>
+              session &&
+              skipBackwardMutation.mutate({
+                code: session.code,
+                password: session.password,
+              })
+            }
+            className="brightness-90 hover:brightness-100 active:brightness-90"
+          >
+            <IoMdSkipBackward className="aspect-square h-6 w-6" />
+          </button>
+
+          <button
+            disabled={
+              session && session.permission_playPause === false && !isAdmin
+            }
+            onClick={() =>
+              session &&
+              playPauseMutation.mutate({
+                code: session.code,
+                password: session.password,
+              })
+            }
+            className={twMerge(
+              session === undefined || session.permission_playPause || isAdmin
+                ? "hover:brightness-90 active:brightness-75"
+                : "cursor-default text-zinc-500",
+            )}
+          >
+            <PlayIcon className="aspect-square h-10 w-10" />
+          </button>
+
+          <button
+            onClick={() =>
+              session &&
+              skipForwardMutation.mutate({
+                code: session.code,
+                password: session.password,
+              })
+            }
+            className="brightness-90 hover:brightness-100 active:brightness-90"
+          >
+            <IoMdSkipForward className="aspect-square h-6 w-6" />
+          </button>
+        </div>
+
+        <div className="flex w-full items-center justify-end text-xs">
+          listening on {playbackState?.device.name}
+        </div>
+      </div>
     </Container>
-  );
-}
-
-function Controls({ session }: { session: SpotifySession }) {
-  const { data, isError, error, isLoading } = api.spotify.getPlayback.useQuery({
-    code: session.code,
-    password: session.password,
-  });
-
-  if (isError) return <pre>{error.message}</pre>;
-
-  return (
-    <div>
-      <pre>{JSON.stringify(data)}</pre>
-    </div>
   );
 }
