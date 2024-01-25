@@ -13,6 +13,7 @@ export default function Container({
       <div
         className={twMerge(
           "h-full w-full rounded-xl border border-zinc-600 p-2",
+          className,
         )}
       >
         {children}
