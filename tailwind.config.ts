@@ -8,6 +8,10 @@ export default {
       fontFamily: {
         sans: ["var(--font-sans)", ...fontFamily.sans],
       },
+      colors: {
+        spotify: "#1DB954",
+        black: "#121212",
+      },
     },
   },
   plugins: [],

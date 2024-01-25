@@ -1,9 +1,15 @@
 import "~/styles/globals.css";
+import "react-simple-toasts/dist/theme/dark.css"; // choose your theme
 
 import { Inter } from "next/font/google";
 import { cookies } from "next/headers";
 
 import { TRPCReactProvider } from "~/trpc/react";
+import ToastConfigLoader from "./_components/ToastConfigLoader";
+import LoginButton from "./_components/LoginButton";
+import { getServerAuthSession } from "~/server/auth";
+import Link from "next/link";
+import { env } from "~/env";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -16,17 +22,30 @@ export const metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getServerAuthSession();
+
   return (
     <html lang="en">
-      <body className={`font-sans ${inter.variable}`}>
+      <body className={`font-sans ${inter.variable} bg-black`}>
         <TRPCReactProvider cookies={cookies().toString()}>
-          {children}
+          <div className="grid min-h-screen w-screen grid-rows-[auto,1fr] bg-black text-white">
+            <header className="flex h-full w-full items-center justify-between p-4">
+              <h1 className="text-4xl">
+                <Link href={env.NEXT_PUBLIC_APP_URL}>Spotify Kiosk</Link>
+              </h1>
+              <div>
+                <LoginButton session={session} />
+              </div>
+            </header>
+            {children}
+          </div>
         </TRPCReactProvider>
+        <ToastConfigLoader />
       </body>
     </html>
   );
