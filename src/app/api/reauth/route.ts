@@ -3,7 +3,6 @@ import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
 
 export async function OPTIONS(req: NextRequest) {
-  console.log(req.body);
   console.log(await req.text());
   console.log(await req.json());
 
