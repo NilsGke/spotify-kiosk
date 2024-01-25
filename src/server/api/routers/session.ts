@@ -96,7 +96,7 @@ export const sessionRouter = createTRPCRouter({
     const { error, spotifyApi } = await getSpotifyApi(ctx.session.user.id);
     if (error !== null) throw Error(error);
     try {
-      const playbackState = await spotifyApi.player.getPlaybackState();
+      await spotifyApi.player.getPlaybackState();
     } catch (error) {
       return { expired: true, error: error };
     }
