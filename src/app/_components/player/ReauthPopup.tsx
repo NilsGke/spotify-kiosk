@@ -48,7 +48,7 @@ export default function ReauthPopup({
               env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID,
               env.NEXT_PUBLIC_APP_URL + "/",
               ["user-read-playback-state", "user-modify-playback-state"],
-              env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID,
+              env.NEXT_PUBLIC_SPOTIFY_AUTH_CALLBACK_URL,
             ).catch((e) => {
               console.error(e);
               toast("Failed to reauthenticate.");

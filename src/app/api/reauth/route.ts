@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
 
-export async function POST(req: NextRequest) {
+export async function OPTIONS(req: NextRequest) {
   console.log("\x1b[32mgot a post from spotify");
   const token = (await req.json()) as {
     access_token: string;
