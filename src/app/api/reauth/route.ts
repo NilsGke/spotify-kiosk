@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { updateAccesToken } from "~/helpers/updateAccesToken";
 import { getServerAuthSession } from "~/server/auth";
-import { db } from "~/server/db";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const token = (await req.json()) as {
@@ -16,16 +18,7 @@ export async function POST(req: NextRequest) {
   if (session === null)
     return NextResponse.json({ status: 401, message: "unauthorized" });
 
-  await db.account.updateMany({
-    where: { userId: session.user.id, provider: "spotify" },
-    data: {
-      access_token: token.access_token,
-      token_type: token.token_type,
-      expires_at: Math.round(token.expires / 1000),
-      refresh_token: token.refresh_token,
-      scope: token.scope,
-    },
-  });
+  await updateAccesToken(session.user.id, token);
 
   return new NextResponse("ok");
 }
