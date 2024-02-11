@@ -33,7 +33,7 @@ export default async function RootLayout({
     <html lang="en">
       <body className={`font-sans ${inter.variable} bg-black`}>
         <TRPCReactProvider cookies={cookies().toString()}>
-          <div className="grid min-h-screen w-screen grid-rows-[auto,1fr] bg-black text-white">
+          <div className="grid max-h-screen min-h-screen w-screen grid-rows-[auto,1fr] bg-black text-white">
             <header className="flex h-full w-full items-center justify-between p-4">
               <h1 className="text-4xl">
                 <Link href={env.NEXT_PUBLIC_APP_URL}>Spotify Kiosk</Link>

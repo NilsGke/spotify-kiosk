@@ -37,7 +37,7 @@ export default function PlayControls({
   const PlayIcon =
     playbackState === undefined
       ? MdCircle
-      : playbackState.is_playing
+      : playbackState?.is_playing
         ? MdPauseCircle
         : IoMdPlayCircle;
 
