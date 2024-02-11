@@ -33,7 +33,7 @@ export default function SessionSettings({
         <label htmlFor="" className="">
           <div>Session Name</div>
           <input
-            onBlur={(e) => onNameChange(name)}
+            onBlur={() => onNameChange(name)}
             onChange={(e) => setName(e.target.value)}
             value={name}
             type="text"
@@ -43,7 +43,7 @@ export default function SessionSettings({
         <label htmlFor="" className="">
           <div>Session Passwort</div>
           <input
-            onBlur={(e) => onPasswordChange(password)}
+            onBlur={() => onPasswordChange(password)}
             onChange={(e) => setPassword(e.target.value)}
             value={password}
             type="text"
