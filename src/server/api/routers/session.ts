@@ -7,7 +7,8 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import Cookies from "js-cookie";
-import { getSpotifyApi } from "./spotify";
+import { getSpotifyApi, refreshToken } from "./spotify";
+import { updateAccesToken } from "../../../helpers/updateAccesToken";
 
 export type SpotifySessionWithoutPassword = Omit<SpotifySession, "password">;
 
@@ -98,7 +99,19 @@ export const sessionRouter = createTRPCRouter({
     try {
       await spotifyApi.player.getPlaybackState();
     } catch (error) {
-      return { expired: true, error: error };
+      try {
+        const newToken = await refreshToken(ctx.session.user.id);
+        console.log(
+          `\x1b[33m new token: ${JSON.stringify(
+            newToken,
+            null,
+            "  ",
+          )} \x1b[33m`,
+        );
+        await updateAccesToken(ctx.session.user.id, newToken);
+      } catch (error) {
+        return { expired: true, error: error };
+      }
     }
 
     return { expired: false, error: null };
