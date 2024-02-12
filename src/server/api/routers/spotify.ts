@@ -145,7 +145,7 @@ async function getSpotifySession(
   creds: { code: string; password: string },
 ) {
   const spotifySession = await database.spotifySession.findFirst({
-    where: { ...creds },
+    where: { code: creds.code, password: creds.password },
   });
   if (spotifySession === null)
     throw Error(
