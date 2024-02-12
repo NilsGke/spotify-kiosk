@@ -8,7 +8,11 @@ import Queue from "./Queue";
 import SessionControls from "./SessionControls";
 import ReauthPopup from "./ReauthPopup";
 import { useEffect } from "react";
-import { itemIsTrack } from "~/helpers/itemIsTrack";
+import { itemIsTrack } from "~/helpers/itemTypeguards";
+import toast from "react-simple-toasts";
+
+const reauthErrorMessage =
+  "Bad or expired token. This can happen if the user revoked a token or the access token has expired. You should re-authenticate the user.";
 
 export default function Player({
   admin = false,
@@ -21,20 +25,38 @@ export default function Player({
 }) {
   const sessionQuery = api.session.get.useQuery(
     { code, password },
-    { refetchInterval: 60000 },
+    { refetchInterval: 60000, refetchOnWindowFocus: false, retryDelay: 30000 },
   );
 
   const { data: playbackState, refetch: refetchPlayback } =
-    api.spotify.getPlayback.useQuery({
-      code,
-      password,
-    });
+    api.spotify.getPlayback.useQuery(
+      {
+        code,
+        password,
+      },
+      {
+        retry: false,
+        onError(error) {
+          if (error.message.includes(reauthErrorMessage))
+            toast("🚩 host needs to reauth. Tell them to open the session");
+        },
+      },
+    );
 
   const { data: queueData, refetch: refetchQueue } =
-    api.spotify.getQueue.useQuery({
-      code,
-      password,
-    });
+    api.spotify.getQueue.useQuery(
+      {
+        code,
+        password,
+      },
+      {
+        retry: false,
+        onError(error) {
+          if (error.message.includes(reauthErrorMessage))
+            toast("🚩 host needs to reauth. Tell them to open the session");
+        },
+      },
+    );
 
   useEffect(() => {
     if (!playbackState?.item) return;
@@ -56,8 +78,19 @@ export default function Player({
 
   return (
     <>
-      <div className="gap-2 p-2 lg:grid lg:grid-cols-[300px,1fr,300px] xl:grid-cols-[400px,1fr,400px]">
-        <Queue queueData={queueData} />
+      <div className="grid-rows-[calc(100%-80px-0.5rem),80px] gap-2 p-2 lg:grid lg:grid-cols-[300px,1fr,300px] xl:grid-cols-[400px,1fr,400px]">
+        <Queue
+          code={code}
+          password={password}
+          queueData={queueData}
+          permissionSkipQueue={!!sessionQuery.data?.permission_skipQueue}
+          refreshQueue={() => {
+            setTimeout(() => {
+              void refetchQueue();
+              void refetchPlayback();
+            }, 500); // sadly need to wait for spotify api to update
+          }}
+        />
 
         <Search />
 

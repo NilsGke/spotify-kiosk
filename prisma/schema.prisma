@@ -29,6 +29,7 @@ model SpotifySession {
     permission_playPause  Boolean @default(false)
     permission_skip       Boolean @default(false)
     permission_addToQueue Boolean @default(false)
+    permission_skipQueue  Boolean @default(false)
 
     createdAt DateTime @default(now())
 

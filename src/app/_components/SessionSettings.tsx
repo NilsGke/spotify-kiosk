@@ -4,10 +4,11 @@ import type { SpotifySession } from "@prisma/client";
 import { useState } from "react";
 import { twMerge } from "tailwind-merge";
 
-export type SessionPermissions = Pick<
-  SpotifySession,
-  "permission_addToQueue" | "permission_playPause" | "permission_skip"
->;
+export type SessionPermissions = {
+  [K in keyof SpotifySession as K extends `permission_${string}`
+    ? K
+    : never]: SpotifySession[K];
+};
 
 export default function SessionSettings({
   name: initialName,

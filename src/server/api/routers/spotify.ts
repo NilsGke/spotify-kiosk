@@ -10,6 +10,7 @@ import { db } from "~/server/db";
 import { spotifySessionCodeZod, spotifySessionPasswordZod } from "./session";
 import type { SpotifySession } from "@prisma/client";
 import type { Session } from "next-auth";
+import { itemTypes } from "../../../helpers/itemTypes";
 import type { SessionPermissions } from "~/app/_components/SessionSettings";
 
 const defaultSessionZodInput = z.object({
@@ -17,12 +18,39 @@ const defaultSessionZodInput = z.object({
   password: spotifySessionPasswordZod,
 });
 
+// ROUTER
 export const spotifyRouter = createTRPCRouter({
   test: protectedProcedure.query(async ({ ctx }) => {
     return await ctx.db.account.findFirst({
       where: { id: ctx.session.user.id },
     });
   }),
+
+  search: publicProcedure
+    .input(
+      z.object({
+        searchTerm: z.string().min(1),
+        types: z.array(z.enum(itemTypes)),
+        page: z.number().min(0),
+      }),
+    )
+    .query(async ({ input }) => {
+      const spotifyApi = SpotifyApi.withClientCredentials(
+        env.SPOTIFY_CLIENT_ID,
+        env.SPOTIFY_CLIENT_SECRET,
+      );
+
+      const limit = 20;
+      const results = await spotifyApi.search<typeof input.types>(
+        input.searchTerm,
+        input.types,
+        "DE",
+        limit,
+        limit * input.page,
+      );
+
+      return results;
+    }),
 
   getPlayback: publicProcedure
     .input(defaultSessionZodInput)
@@ -125,6 +153,50 @@ export const spotifyRouter = createTRPCRouter({
         throw Error("device id is null. Maybe its not playing?");
 
       await spotifyApi.player.skipToPrevious(deviceId);
+    }),
+
+  skipQueue: publicProcedure
+    .input(defaultSessionZodInput.merge(z.object({ uriToSkipTo: z.string() })))
+    .mutation(async ({ ctx, input }) => {
+      const spotifySession = await getSpotifySession(ctx.db, input);
+      checkPermission(spotifySession, ctx.session, "permission_skipQueue");
+
+      const { spotifyApi, error } = await getSpotifyApi(spotifySession.adminId);
+      if (error !== null)
+        throw Error(`could not get spotify api. Error: ${error}`);
+
+      const {
+        device: { id: deviceId },
+      } = await spotifyApi.player.getPlaybackState();
+      if (deviceId === null) throw Error("could not find a playing device");
+
+      const queue = await spotifyApi.player.getUsersQueue();
+      const queueIndex = queue.queue.findIndex(
+        (item) => item.uri === input.uriToSkipTo,
+      );
+      if (queueIndex === -1)
+        throw Error("requested song could not be found in queue");
+
+      // skip all songs one by one
+      // terrible solution, but the spotify api does not provide a better way
+      const proms: Promise<void>[] = [];
+      for (let i = 0; i < queueIndex + 1; i++)
+        proms.push(spotifyApi.player.skipToNext(deviceId));
+
+      await Promise.all(proms);
+    }),
+
+  addToQueue: publicProcedure
+    .input(defaultSessionZodInput.merge(z.object({ songUri: z.string() })))
+    .mutation(async ({ ctx, input }) => {
+      const spotifySession = await getSpotifySession(ctx.db, input);
+      checkPermission(spotifySession, ctx.session, "permission_playPause");
+
+      const { spotifyApi, error } = await getSpotifyApi(spotifySession.adminId);
+      if (error !== null)
+        throw Error(`could not get spotify api. Error: ${error}`);
+
+      await spotifyApi.player.addItemToPlaybackQueue(input.songUri);
     }),
 });
 
