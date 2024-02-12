@@ -92,7 +92,7 @@ export default function Player({
           }}
         />
 
-        <Search />
+        <Search session={sessionQuery.data} />
 
         <div className="row-span-2">
           <CurrentSong playbackState={playbackState} />

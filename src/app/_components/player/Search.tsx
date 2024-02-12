@@ -18,9 +18,13 @@ import {
 import useDebounce from "~/hooks/useDebounce";
 import { twMerge } from "tailwind-merge";
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa6";
-import { SpotifySession } from "@prisma/client";
+import type { SpotifySession } from "@prisma/client";
 
-export default function Search({ session }: { session: SpotifySession }) {
+export default function Search({
+  session,
+}: {
+  session: SpotifySession | undefined;
+}) {
   const [searchTerm, setSearchTerm] = useState("");
   const searchDebounce = useDebounce(searchTerm, 500);
   const [page, setPage] = useState(0);

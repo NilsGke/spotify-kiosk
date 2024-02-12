@@ -17,6 +17,7 @@ export default function SessionGenerator() {
     permission_addToQueue: false,
     permission_playPause: false,
     permission_skip: false,
+    permission_skipQueue: false,
   });
 
   const router = useRouter();
