@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import SessionSettings, {
-  type SessionPermissions,
-} from "../_components/SessionSettings";
+import SessionSettings from "../_components/SessionSettings";
+import { type SessionPermissions } from "~/types/permissionTypes";
 import { twMerge } from "tailwind-merge";
 import { api } from "~/trpc/react";
 import toast from "react-simple-toasts";

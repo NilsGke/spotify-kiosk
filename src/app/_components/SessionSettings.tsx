@@ -1,14 +1,8 @@
 "use client";
 
-import type { SpotifySession } from "@prisma/client";
 import { useState } from "react";
 import { twMerge } from "tailwind-merge";
-
-export type SessionPermissions = {
-  [K in keyof SpotifySession as K extends `permission_${string}`
-    ? K
-    : never]: SpotifySession[K];
-};
+import type { SessionPermissions } from "~/types/permissionTypes";
 
 export default function SessionSettings({
   name: initialName,
@@ -70,6 +64,7 @@ function PermissionSettings({
   permissions: SessionPermissions;
   onChange: (permissions: SessionPermissions) => void;
 }) {
+  // TODO: try to optimize this (find a general solution using the permission names and not have a component for each one)
   return (
     <>
       <h2 className="text-xl">User Permissions</h2>

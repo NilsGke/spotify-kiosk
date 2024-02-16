@@ -10,8 +10,8 @@ import { db } from "~/server/db";
 import { spotifySessionCodeZod, spotifySessionPasswordZod } from "./session";
 import type { SpotifySession } from "@prisma/client";
 import type { Session } from "next-auth";
-import { itemTypes } from "../../../helpers/itemTypes";
-import type { SessionPermissions } from "~/app/_components/SessionSettings";
+import { itemTypes } from "../../../types/itemTypes";
+import type { SessionPermissions } from "~/types/permissionTypes";
 
 const defaultSessionZodInput = z.object({
   code: spotifySessionCodeZod,
