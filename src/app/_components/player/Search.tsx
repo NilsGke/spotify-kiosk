@@ -1,9 +1,9 @@
 "use client";
 
-import { type HTMLAttributes, useRef, useState } from "react";
+import { type HTMLAttributes, useRef, useState, useEffect } from "react";
 import Container from "./Container";
 import { api } from "~/trpc/react";
-import { itemTypes } from "~/helpers/itemTypes";
+import { itemTypes } from "~/types/itemTypes";
 import type { ItemTypes, Page } from "@spotify/web-api-ts-sdk";
 import {
   itemIsAlbum,
@@ -19,6 +19,7 @@ import useDebounce from "~/hooks/useDebounce";
 import { twMerge } from "tailwind-merge";
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa6";
 import type { SpotifySession } from "@prisma/client";
+import { stringIsPermissionName } from "~/types/permissionTypes";
 
 export default function Search({
   session,
@@ -36,17 +37,26 @@ export default function Search({
   const inputBG =
     typeFilter !== undefined ? (
       <>
-        <span className="rounded bg-gray-600 outline outline-2 outline-gray-600">
+        <span
+          onClick={() => setShowSuggest(true)}
+          className="rounded bg-zinc-800 py-0.5 pr-2 outline outline-2 outline-zinc-600"
+        >
           @{typeFilter}
         </span>{" "}
-        {searchTerm.slice(0, typeFilter.length)}
+        {/* {searchTerm.slice(0, typeFilter.length)} */}
       </>
     ) : (
       searchTerm
     );
 
   // display "autocomplete" menu if input starts with @
-  const showSuggest = searchTerm.startsWith("@") && typeFilter === undefined;
+  const [showSuggest, setShowSuggest] = useState(false);
+  // update show suggest on every character input
+  useEffect(() => {
+    setShowSuggest(searchTerm.startsWith("@") && typeFilter === undefined);
+    setPage(0);
+  }, [searchTerm, typeFilter]);
+
   const searchWithoutAt = searchTerm.slice(1, undefined);
   const suggestions = itemTypes.filter((type) =>
     type.startsWith(searchWithoutAt),
@@ -72,13 +82,6 @@ export default function Search({
       refetchOnWindowFocus: false,
     },
   );
-
-  console.log({
-    enabled: showSuggest === false && searchTerm.length !== 0,
-    searchTerm,
-    searchResults,
-    isFetching,
-  });
 
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionRef = useRef<HTMLDivElement>(null);
@@ -114,11 +117,30 @@ export default function Search({
       </PageButton>
     </div>
   );
+  const pageButtonSkeleton = (
+    <div className="flex w-full flex-nowrap items-center justify-center gap-2 opacity-50">
+      <PageButton disabled>
+        <FaAngleLeft />
+      </PageButton>
+
+      {[...Array(buttonCount).keys()].map((i) => (
+        <PageButton key={i}>{i + 1}</PageButton>
+      ))}
+
+      {page >= buttonCount && (
+        <PageButton className="border-spotify">{page + 1}</PageButton>
+      )}
+
+      <PageButton>
+        <FaAngleRight />
+      </PageButton>
+    </div>
+  );
 
   return (
     <Container className="grid grid-rows-[2.75rem,1fr] gap-2">
       <div className="relative">
-        <div className=" z-10 h-11 w-full rounded-lg border-2 border-zinc-600 bg-transparent p-2 text-transparent">
+        <div className="z-10 h-11 w-full rounded-lg border-2 border-zinc-600 bg-transparent p-2 pl-1 text-transparent">
           {inputBG}
         </div>
         <input
@@ -136,7 +158,7 @@ export default function Search({
               searchTerm.at(typeFilter.length) !== " " &&
               e.key !== "Backspace"
             )
-              setSearchTerm((prev) => prev + " ");
+              setSearchTerm((prev) => prev + "  ");
 
             if (
               e.key === "ArrowDown" &&
@@ -151,12 +173,23 @@ export default function Search({
         />
         {showSuggest && (
           <div
-            className="absolute top-12 z-30 flex w-24 flex-col gap-1 rounded-lg border border-gray-600 bg-black p-2 text-sm"
+            className="absolute top-12 z-30 flex flex-col gap-1 rounded-lg border border-gray-600 bg-black p-2 text-sm"
             ref={suggestionRef}
           >
+            <button
+              onClick={() => {
+                setSearchTerm(
+                  (prev) => prev.replace(/^(@\w*)\s*/i, "") ?? prev,
+                );
+                inputRef.current?.focus();
+              }}
+              className="text-nowrap rounded bg-zinc-800 px-1 py-1"
+            >
+              remove filter
+            </button>
             {suggestions.map((suggestion) => (
               <button
-                className="rounded bg-zinc-800 py-1"
+                className="rounded bg-zinc-800 px-1 py-1"
                 key={suggestion}
                 onKeyUp={(e) => {
                   if (e.key === "ArrowUp")
@@ -171,9 +204,8 @@ export default function Search({
                     )?.focus();
                   else if (e.key === "Escape") inputRef.current?.focus();
                 }}
-                onClick={(e) => {
-                  console.log("onclick");
-                  setSearchTerm("@" + suggestion + " ");
+                onClick={() => {
+                  setSearchTerm("@" + suggestion + "  ");
                   inputRef.current?.focus();
                 }}
               >
@@ -190,22 +222,57 @@ export default function Search({
         className={twMerge(
           "flex h-full w-full max-w-full flex-grow-0 flex-col gap-2 overflow-y-scroll scrollbar scrollbar-track-transparent scrollbar-thumb-zinc-600",
           isFetching && "overflow-hidden",
-          searchTerm !== searchDebounce && "opacity-60",
+          searchTerm !== searchDebounce &&
+            searchTerm !== "" &&
+            "opacity-40 grayscale",
         )}
       >
         {/* page if search input is empty */}
         {searchTerm.length === 0 && searchResults === undefined && (
           <div className="grid h-full w-full grid-cols-1 items-center justify-center justify-items-center gap-4 md:grid-cols-2 md:grid-rows-2">
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-8">
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6">
               start typing to search for a track
             </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-8">
-              you can search for different things with @
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6">
+              <h2 className="mb-3 text-center">type @...</h2>
+              <div className="flex flex-wrap gap-1">
+                {itemTypes.map((typename) => (
+                  <button
+                    key={typename}
+                    onClick={() => {
+                      setSearchTerm("@" + typename + "  ");
+                      inputRef.current?.focus();
+                    }}
+                    className="rounded border border-zinc-500 bg-zinc-800 px-1 py-0.5 hover:bg-zinc-700 active:bg-zinc-600"
+                  >
+                    {typename}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-8">
-              <h2>Your Permissions:</h2>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6">
+              <h2 className="mb-3 text-center">Your Permissions:</h2>
+              <div className="flex flex-wrap justify-center gap-1">
+                {session &&
+                  Object.entries(session)
+                    .filter((a) => stringIsPermissionName(a[0]))
+                    .map((keyval) => {
+                      const [permissionName, value] = keyval;
+                      if (typeof value !== "boolean") return null;
+                      if (value === false) return null;
+
+                      return (
+                        <div
+                          key={permissionName}
+                          className="rounded border border-green-700 px-1 py-0.5 text-green-300"
+                        >
+                          {permissionName.replace("permission_", "")}
+                        </div>
+                      );
+                    })}
+              </div>
             </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-8"></div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6"></div>
           </div>
         )}
 
@@ -219,13 +286,18 @@ export default function Search({
         {pageButtons}
 
         {/* results skeleton */}
-        {isFetching &&
-          [...Array(20).keys()].map((i) => (
-            <div
-              key={i}
-              className="min-h-10 w-full max-w-full animate-pulse rounded bg-zinc-800"
-            />
-          ))}
+        {isFetching && (
+          <>
+            {pageButtonSkeleton}
+            {[...Array(20).keys()].map((i) => (
+              <div
+                key={i}
+                className="min-h-10 w-full max-w-full animate-pulse rounded bg-zinc-900"
+              />
+            ))}
+            {pageButtonSkeleton}
+          </>
+        )}
       </div>
     </Container>
   );
