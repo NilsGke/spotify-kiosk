@@ -7,6 +7,7 @@ import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { twMerge } from "tailwind-merge";
 import { useEffect, useState } from "react";
 import { api } from "~/trpc/react";
+import { useSignal } from "~/helpers/signals";
 
 export default function Queue({
   code,
@@ -47,8 +48,10 @@ export default function Queue({
     onSuccess: refreshQueue,
   });
 
+  useSignal("updateQueue", refreshQueue);
+
   return (
-    <Container className="scrollbar-track-transparent scrollbar-thumb-zinc-600 scrollbar flex max-h-full flex-col gap-2 overflow-y-scroll">
+    <Container className="flex max-h-full flex-col gap-2 overflow-y-scroll scrollbar scrollbar-track-transparent scrollbar-thumb-zinc-600">
       <h2 className="">Currently Playing</h2>
       <div ref={currentContainerRef}>
         <Item data={queue?.currently_playing ?? null} />

@@ -4,7 +4,7 @@ import { type HTMLAttributes, useRef, useState, useEffect } from "react";
 import Container from "./Container";
 import { api } from "~/trpc/react";
 import { itemTypes } from "~/types/itemTypes";
-import type { ItemTypes, Page } from "@spotify/web-api-ts-sdk";
+import type { Episode, ItemTypes, Page, Track } from "@spotify/web-api-ts-sdk";
 import {
   itemIsAlbum,
   itemIsArtist,
@@ -20,6 +20,7 @@ import { twMerge } from "tailwind-merge";
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa6";
 import type { SpotifySession } from "@prisma/client";
 import { stringIsPermissionName } from "~/types/permissionTypes";
+import { sendSignal } from "~/helpers/signals";
 
 export default function Search({
   session,
@@ -136,6 +137,11 @@ export default function Search({
       </PageButton>
     </div>
   );
+
+  const addToQueueMutation = api.spotify.addToQueue.useMutation({
+    onSuccess: (data, variables) =>
+      sendSignal("updateQueue", { add: [variables.songUri], remove: [] }),
+  });
 
   return (
     <Container className="grid grid-rows-[2.75rem,1fr] gap-2">
@@ -280,7 +286,18 @@ export default function Search({
 
         {/* search results */}
         {searchResults?.map((result) => (
-          <ResultList key={result.itemType} resultPage={result.resultPage} />
+          <ResultList
+            addToQueue={(item) =>
+              session &&
+              addToQueueMutation.mutate({
+                code: session.code,
+                password: session.password,
+                songUri: item.uri,
+              })
+            }
+            key={result.itemType}
+            resultPage={result.resultPage}
+          />
         ))}
 
         {pageButtons}
@@ -303,7 +320,13 @@ export default function Search({
   );
 }
 
-function ResultList({ resultPage }: { resultPage: Page<SearchResult> }) {
+function ResultList({
+  resultPage,
+  addToQueue,
+}: {
+  resultPage: Page<SearchResult>;
+  addToQueue: (item: Track | Episode) => void;
+}) {
   if (resultPage.items.filter((item) => item !== null).length === 0)
     return (
       <div className="flex h-full w-full items-center justify-center text-sm text-zinc-500">
@@ -316,12 +339,19 @@ function ResultList({ resultPage }: { resultPage: Page<SearchResult> }) {
     .map((item) => (
       <ResultItem
         key={item.id + (itemIsTrack(item) && item.album.id)} // need to add album to track because a track can be in multiple albums, resulting in the ids not being unique 🤡
+        addToQueue={addToQueue}
         item={item}
       />
     ));
 }
 
-function ResultItem({ item }: { item: SearchResult }) {
+function ResultItem({
+  item,
+  addToQueue,
+}: {
+  item: SearchResult;
+  addToQueue: (item: Track | Episode) => void;
+}) {
   if (itemIsAlbum(item))
     return (
       <ResultRow
@@ -409,9 +439,7 @@ function ResultItem({ item }: { item: SearchResult }) {
         artist={item.artists.map((artist) => artist.name).join(", ")}
         extraInfo={item.album.name}
         duration={lengthString}
-        onClick={() => {
-          console.log(item);
-        }}
+        onClick={() => addToQueue(item)}
       />
     );
   }
