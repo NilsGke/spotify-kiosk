@@ -3,6 +3,7 @@ import "react-simple-toasts/dist/theme/dark.css"; // choose your theme
 
 import { Inter } from "next/font/google";
 import { cookies } from "next/headers";
+import { Analytics } from "@vercel/analytics/react";
 
 import { TRPCReactProvider } from "~/trpc/react";
 import ToastConfigLoader from "./_components/ToastConfigLoader";
@@ -43,6 +44,7 @@ export default async function RootLayout({
               </div>
             </header>
             {children}
+            <Analytics />
           </div>
         </TRPCReactProvider>
         <ToastConfigLoader />
