@@ -1,5 +1,6 @@
 "use client";
 
+import type { Episode, Track } from "@spotify/web-api-ts-sdk";
 import { useEffect } from "react";
 
 console.log("running");
@@ -10,9 +11,9 @@ type ItemUri = string;
  * strings are the item `uri`s
  */
 interface SignalEventMap {
-  updateQueue: CustomEvent<{
-    add: ItemUri[];
-    remove: ItemUri[];
+  updateQueue: CustomEvent<null | {
+    add: (Track | Episode | ItemUri)[];
+    remove: (Track | Episode | ItemUri)[];
   }>;
   updatePlaystate: CustomEvent<{
     newItem: ItemUri[];

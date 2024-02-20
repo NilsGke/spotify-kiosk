@@ -48,7 +48,36 @@ export default function Queue({
     onSuccess: refreshQueue,
   });
 
-  useSignal("updateQueue", refreshQueue);
+  useSignal("updateQueue", (data) => {
+    console.log("udpate queue", data);
+    if (data === null) refreshQueue();
+    else
+      setQueue((prev) => {
+        if (prev === undefined)
+          return data.add.length >= 0
+            ? {
+                queue: data.add.filter((item) => typeof item !== "string") as (
+                  | Track
+                  | Episode
+                )[],
+                currently_playing: null,
+              }
+            : undefined;
+        const idsToRemove = data.remove.map((item) =>
+          typeof item === "string" ? item : item.id,
+        );
+        return {
+          currently_playing: prev.currently_playing,
+          queue: [
+            ...(data.add.filter((item) => typeof item !== "string") as (
+              | Track
+              | Episode
+            )[]),
+            ...prev.queue.filter((item) => !idsToRemove.includes(item.id)),
+          ],
+        };
+      });
+  });
 
   return (
     <Container className="flex max-h-full flex-col gap-2 overflow-y-scroll scrollbar scrollbar-track-transparent scrollbar-thumb-zinc-600">

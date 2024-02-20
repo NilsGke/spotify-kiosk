@@ -1,6 +1,12 @@
 "use client";
 
-import { type HTMLAttributes, useRef, useState, useEffect } from "react";
+import {
+  type HTMLAttributes,
+  useRef,
+  useState,
+  useEffect,
+  KeyboardEventHandler,
+} from "react";
 import Container from "./Container";
 import { api } from "~/trpc/react";
 import { itemTypes } from "~/types/itemTypes";
@@ -21,6 +27,7 @@ import { FaAngleLeft, FaAngleRight } from "react-icons/fa6";
 import type { SpotifySession } from "@prisma/client";
 import { stringIsPermissionName } from "~/types/permissionTypes";
 import { sendSignal } from "~/helpers/signals";
+import toast from "react-simple-toasts";
 
 export default function Search({
   session,
@@ -69,12 +76,12 @@ export default function Search({
       page,
       searchTerm:
         typeFilter !== undefined
-          ? searchDebounce.replace(`@${typeFilter} `, "")
-          : searchDebounce,
+          ? searchDebounce.replace(`@${typeFilter} `, "").trim()
+          : searchDebounce.trim(),
       types: [typeFilter ?? "track"],
     },
     {
-      enabled: showSuggest === false && searchTerm.length !== 0,
+      enabled: showSuggest === false && searchTerm.trim().length !== 0,
       select: (data) =>
         Object.entries(data).map(([key, value]) => ({
           itemType: key as ItemTypes,
@@ -139,12 +146,35 @@ export default function Search({
   );
 
   const addToQueueMutation = api.spotify.addToQueue.useMutation({
-    onSuccess: (data, variables) =>
-      sendSignal("updateQueue", { add: [variables.songUri], remove: [] }),
+    onSuccess: () => sendSignal("updateQueue", null),
+    onError: (error, variables) => {
+      sendSignal("updateQueue", {
+        add: [],
+        remove: [variables.songUri],
+      });
+      if (error.shape?.data.zodError)
+        toast(error.data?.zodError?.fieldErrors[0]);
+      else toast(error.message);
+    },
   });
+
+  const suggestionItemKeyUp: KeyboardEventHandler<HTMLButtonElement> = (e) => {
+    if (e.key === "ArrowUp")
+      (
+        (e.target as HTMLButtonElement)
+          .previousElementSibling as HTMLButtonElement | null
+      )?.focus();
+    else if (e.key === "ArrowDown")
+      (
+        (e.target as HTMLButtonElement)
+          .nextElementSibling as HTMLButtonElement | null
+      )?.focus();
+    else if (e.key === "Escape") inputRef.current?.focus();
+  };
 
   return (
     <Container className="grid grid-rows-[2.75rem,1fr] gap-2">
+      {/* search bar */}
       <div className="relative">
         <div className="z-10 h-11 w-full rounded-lg border-2 border-zinc-600 bg-transparent p-2 pl-1 text-transparent">
           {inputBG}
@@ -182,34 +212,11 @@ export default function Search({
             className="absolute top-12 z-30 flex flex-col gap-1 rounded-lg border border-gray-600 bg-black p-2 text-sm"
             ref={suggestionRef}
           >
-            <button
-              onClick={() => {
-                setSearchTerm(
-                  (prev) => prev.replace(/^(@\w*)\s*/i, "") ?? prev,
-                );
-                inputRef.current?.focus();
-              }}
-              className="text-nowrap rounded bg-zinc-800 px-1 py-1"
-            >
-              remove filter
-            </button>
             {suggestions.map((suggestion) => (
               <button
-                className="rounded bg-zinc-800 px-1 py-1"
+                className="rounded border-2 border-zinc-600 bg-zinc-800 px-1 py-1"
                 key={suggestion}
-                onKeyUp={(e) => {
-                  if (e.key === "ArrowUp")
-                    (
-                      (e.target as HTMLButtonElement)
-                        .previousElementSibling as HTMLButtonElement | null
-                    )?.focus();
-                  else if (e.key === "ArrowDown")
-                    (
-                      (e.target as HTMLButtonElement)
-                        .nextElementSibling as HTMLButtonElement | null
-                    )?.focus();
-                  else if (e.key === "Escape") inputRef.current?.focus();
-                }}
+                onKeyUp={suggestionItemKeyUp}
                 onClick={() => {
                   setSearchTerm("@" + suggestion + "  ");
                   inputRef.current?.focus();
@@ -221,9 +228,23 @@ export default function Search({
             {suggestions.length === 0 && (
               <div className="text-sm text-zinc-500">invalid filter</div>
             )}
+            <button
+              onClick={() => {
+                setSearchTerm(
+                  (prev) => prev.replace(/^(@\w*)\s*/i, "") ?? prev,
+                );
+                inputRef.current?.focus();
+              }}
+              onKeyUp={suggestionItemKeyUp}
+              className="text-nowrap rounded border-2 border-zinc-600 bg-zinc-800 px-1 py-1"
+            >
+              remove filter
+            </button>
           </div>
         )}
       </div>
+
+      {/* results */}
       <div
         className={twMerge(
           "flex h-full w-full max-w-full flex-grow-0 flex-col gap-2 overflow-y-scroll scrollbar scrollbar-track-transparent scrollbar-thumb-zinc-600",
@@ -287,14 +308,19 @@ export default function Search({
         {/* search results */}
         {searchResults?.map((result) => (
           <ResultList
-            addToQueue={(item) =>
-              session &&
-              addToQueueMutation.mutate({
-                code: session.code,
-                password: session.password,
-                songUri: item.uri,
-              })
-            }
+            addToQueue={(item) => {
+              if (session) {
+                addToQueueMutation.mutate({
+                  code: session.code,
+                  password: session.password,
+                  songUri: item.uri,
+                });
+                sendSignal("updateQueue", {
+                  add: [item],
+                  remove: [],
+                });
+              }
+            }}
             key={result.itemType}
             resultPage={result.resultPage}
           />
