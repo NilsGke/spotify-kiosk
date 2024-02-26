@@ -6,7 +6,6 @@ import type {
   SimplifiedAudiobook,
   SimplifiedEpisode,
   SimplifiedShow,
-  SimplifiedTrack,
   Track,
 } from "@spotify/web-api-ts-sdk";
 

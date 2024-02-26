@@ -6,12 +6,15 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
-import { db } from "~/server/db";
+import { type db } from "~/server/db";
 import { spotifySessionCodeZod, spotifySessionPasswordZod } from "./session";
 import type { SpotifySession } from "@prisma/client";
 import type { Session } from "next-auth";
 import { itemTypes } from "../../../types/itemTypes";
 import type { SessionPermissions } from "~/types/permissionTypes";
+import spotifyMarkets from "~/helpers/spotifyMarkets";
+import { api } from "~/trpc/server";
+import { getSpotifyApi } from "../../spotifyApi";
 
 const defaultSessionZodInput = z.object({
   code: spotifySessionCodeZod,
@@ -20,12 +23,6 @@ const defaultSessionZodInput = z.object({
 
 // ROUTER
 export const spotifyRouter = createTRPCRouter({
-  test: protectedProcedure.query(async ({ ctx }) => {
-    return await ctx.db.account.findFirst({
-      where: { id: ctx.session.user.id },
-    });
-  }),
-
   search: publicProcedure
     .input(
       z.object({
@@ -198,6 +195,95 @@ export const spotifyRouter = createTRPCRouter({
 
       await spotifyApi.player.addItemToPlaybackQueue(input.songUri);
     }),
+  getAlbum: publicProcedure
+    .input(
+      z.object({
+        id: z.string().min(1),
+      }),
+    )
+    .query(async ({ input }) => {
+      const spotifyApi = SpotifyApi.withClientCredentials(
+        env.SPOTIFY_CLIENT_ID,
+        env.SPOTIFY_CLIENT_SECRET,
+      );
+
+      return await spotifyApi.albums.get(input.id);
+    }),
+  getArtistInformation: publicProcedure
+    .input(
+      z.object({ artistId: z.string().min(1), market: z.enum(spotifyMarkets) }),
+    )
+    .query(async ({ input: { artistId, market } }) => {
+      const spotifyApi = SpotifyApi.withClientCredentials(
+        env.SPOTIFY_CLIENT_ID,
+        env.SPOTIFY_CLIENT_SECRET,
+      );
+
+      const [topTracks, albums, relatedArtists] = await Promise.all([
+        spotifyApi.artists.topTracks(artistId, market),
+        spotifyApi.artists.albums(artistId, undefined, market, 5),
+        spotifyApi.artists.relatedArtists(artistId),
+      ]);
+
+      return { topTracks, albums, relatedArtists: relatedArtists.artists };
+    }),
+
+  hasSavedTrack: protectedProcedure
+    .input(
+      z.object({
+        trackId: z.string().min(1),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { spotifyApi, error } = await getSpotifyApi(ctx.session.user.id);
+      if (error !== null) throw Error(error);
+
+      return (
+        await spotifyApi.currentUser.tracks.hasSavedTracks([input.trackId])
+      )[0];
+    }),
+
+  saveTrack: protectedProcedure
+    .input(
+      z.object({
+        trackId: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { spotifyApi, error: spotifyApiError } = await getSpotifyApi(
+        ctx.session.user.id,
+      );
+      if (spotifyApiError !== null) throw Error(spotifyApiError);
+      const { expired, error: expirationError } =
+        await api.session.checkExpiration.query();
+      if (expirationError) throw Error(expirationError as string);
+      if (expired) throw Error("token expired! please reauthenticate");
+
+      await spotifyApi.currentUser.tracks.saveTracks([input.trackId]);
+
+      return;
+    }),
+
+  removeSavedTrack: protectedProcedure
+    .input(
+      z.object({
+        trackId: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { spotifyApi, error: spotifyApiError } = await getSpotifyApi(
+        ctx.session.user.id,
+      );
+      if (spotifyApiError !== null) throw Error(spotifyApiError);
+      const { expired, error: expirationError } =
+        await api.session.checkExpiration.query();
+      if (expirationError) throw Error(expirationError as string);
+      if (expired) throw Error("token expired! please reauthenticate");
+
+      await spotifyApi.currentUser.tracks.removeSavedTracks([input.trackId]);
+
+      return;
+    }),
 });
 
 function checkPermission(
@@ -224,69 +310,6 @@ async function getSpotifySession(
       "could not get spotify session while trying to toggle play/pause",
     );
   return spotifySession;
-}
-
-export async function getSpotifyApi(userId: string) {
-  const data = await db.account.findFirst({
-    where: { userId },
-  });
-
-  if (data === null) return { error: "user not found", spotifyApi: null };
-  if (data.access_token === null)
-    return { error: "no access token", spotifyApi: null };
-  if (data.expires_at === null)
-    return { error: "expires at is null", spotifyApi: null };
-  if (data.refresh_token === null)
-    return { error: "refresh token is null", spotifyApi: null };
-  if (data.token_type === null)
-    return { error: "token type is null", spotifyApi: null };
-
-  const accessToken: AccessToken = {
-    access_token: data.access_token,
-    expires_in: Date.now() - data.expires_at,
-    refresh_token: data.refresh_token,
-    token_type: data.token_type,
-  };
-
-  return {
-    spotifyApi: SpotifyApi.withAccessToken(env.SPOTIFY_CLIENT_ID, accessToken),
-    error: null,
-  };
-}
-
-export async function refreshToken(userId: string) {
-  const accountData = await db.account.findFirst({
-    where: { userId },
-  });
-
-  if (accountData === null) throw Error("user not found");
-  if (accountData.refresh_token === null) throw Error("refresh token is null");
-  if (accountData.token_type === null) throw Error("token type is null");
-
-  const encodedCredentials = Buffer.from(
-    `${env.SPOTIFY_CLIENT_ID}:${env.SPOTIFY_CLIENT_SECRET}`,
-  ).toString("base64");
-  const authorizationHeader = `Basic ${encodedCredentials}`;
-
-  const refreshOptions = {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: authorizationHeader,
-    },
-    body: `grant_type=refresh_token&refresh_token=${accountData.refresh_token}`,
-  };
-
-  const res = await fetch(
-    "https://accounts.spotify.com/api/token",
-    refreshOptions,
-  );
-
-  if (!res.ok) throw Error(`Token refresh failed with status: ${res.status}`);
-
-  const newToken = (await res.json()) as RefreshToken;
-
-  return newToken;
 }
 
 export type RefreshToken = Pick<

@@ -3,6 +3,7 @@
 import { SpotifyApi } from "@spotify/web-api-ts-sdk";
 import { useEffect, useState } from "react";
 import { env } from "~/env";
+import { scopes } from "~/server/scopes";
 
 export default function ReauthPage() {
   const [done, setDone] = useState(false);
@@ -11,7 +12,7 @@ export default function ReauthPage() {
     void SpotifyApi.performUserAuthorization(
       env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID,
       env.NEXT_PUBLIC_APP_URL + "/reauth",
-      ["user-read-playback-state", "user-modify-playback-state"],
+      scopes,
       env.NEXT_PUBLIC_APP_URL + "/api/reauth",
     ).then(() => {
       setDone(true);

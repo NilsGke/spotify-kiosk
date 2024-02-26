@@ -1,5 +1,5 @@
 import type { SpotifySession } from "@prisma/client";
-import { z } from "zod";
+import { type ZodBoolean, z } from "zod";
 import generatePwCookieName from "~/helpers/generatePwCookieName";
 import {
   createTRPCRouter,
@@ -7,8 +7,12 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import Cookies from "js-cookie";
-import { getSpotifyApi, refreshToken } from "./spotify";
-import { updateAccesToken } from "../../../helpers/updateAccesToken";
+import checkExpiration from "~/server/checkExpiration";
+import spotifyMarkets from "~/helpers/spotifyMarkets";
+import {
+  type SessionPermissions,
+  stringIsPermissionName,
+} from "~/types/permissionTypes";
 
 export type SpotifySessionWithoutPassword = Omit<SpotifySession, "password">;
 
@@ -20,18 +24,27 @@ export const spotifySessionCodeZod = z
   .string()
   .min(4, "code must be at least four characters long");
 
+const permissionZods: Record<keyof SessionPermissions, ZodBoolean> = {
+  permission_addToQueue: z.boolean(),
+  permission_playPause: z.boolean(),
+  permission_skip: z.boolean(),
+  permission_skipQueue: z.boolean(),
+};
+
 export const sessionRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
         name: z.string().min(1, "❕ name cannot be empty"),
         password: spotifySessionPasswordZod,
-        permission_playPause: z.boolean(),
-        permission_skip: z.boolean(),
-        permission_addToQueue: z.boolean(),
+        market: z.enum(spotifyMarkets, {
+          required_error: "❕ you must select a market",
+        }),
+        ...permissionZods,
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // check for existing sessions
       const usersSesssionsCount = await ctx.db.spotifySession.count({
         where: {
           adminId: ctx.session.user.id,
@@ -43,22 +56,31 @@ export const sessionRouter = createTRPCRouter({
           "❌ You cannot create more then ten sessions.\nDelete your old ones before creating a new session.",
         );
 
-      const data = await ctx.db.spotifySession.findMany({
+      // get all existing session codes
+      const allSessionCodes = await ctx.db.spotifySession.findMany({
         select: {
           code: true,
         },
       });
 
-      const newCode = generateUniqueCode(data.map((d) => d.code));
+      const newCode = generateUniqueCode(allSessionCodes.map((d) => d.code));
 
-      const existingSession = await ctx.db.spotifySession.findFirst({
+      const existingSessionWithNewCode = await ctx.db.spotifySession.findFirst({
         where: {
           code: newCode,
         },
         select: { id: true }, // we technically dont need to select anything (though prisma wont let you leave it empty), we only want to check if there is an existing session with that code
       });
 
-      if (existingSession === null)
+      // filter permissions from input object
+      const permissions = Object.keys(input)
+        .filter(stringIsPermissionName)
+        .reduce((object, key) => {
+          object[key] = input[key];
+          return object;
+        }, {} as SessionPermissions);
+
+      if (existingSessionWithNewCode === null)
         return ctx.db.spotifySession.create({
           data: {
             name: input.name,
@@ -67,9 +89,9 @@ export const sessionRouter = createTRPCRouter({
             adminId: ctx.session.user.id,
             code: newCode,
 
-            permission_addToQueue: input.permission_addToQueue,
-            permission_playPause: input.permission_playPause,
-            permission_skip: input.permission_skip,
+            market: input.market,
+
+            ...permissions,
           },
         });
       else throw Error("❌ could not generate a unique session code");
@@ -93,29 +115,9 @@ export const sessionRouter = createTRPCRouter({
       return session;
     }),
 
-  checkExpiration: protectedProcedure.query(async ({ ctx }) => {
-    const { error, spotifyApi } = await getSpotifyApi(ctx.session.user.id);
-    if (error !== null) throw Error(error);
-    try {
-      await spotifyApi.player.getPlaybackState();
-    } catch (error) {
-      try {
-        const newToken = await refreshToken(ctx.session.user.id);
-        console.log(
-          `\x1b[33m new token: ${JSON.stringify(
-            newToken,
-            null,
-            "  ",
-          )} \x1b[33m`,
-        );
-        await updateAccesToken(ctx.session.user.id, newToken);
-      } catch (error) {
-        return { expired: true, error: error };
-      }
-    }
-
-    return { expired: false, error: null };
-  }),
+  checkExpiration: protectedProcedure.query(
+    async ({ ctx }) => await checkExpiration(ctx.session.user.id),
+  ),
 
   checkPassword: publicProcedure
     .input(

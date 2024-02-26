@@ -1,13 +1,16 @@
 "use client";
 
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { twMerge } from "tailwind-merge";
 
 export default function SlideDisplay({
   children,
   onlyOnHover = false,
+  className,
 }: {
   children: ReactNode;
   onlyOnHover?: boolean;
+  className?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -60,12 +63,12 @@ export default function SlideDisplay({
 
   return (
     <div
-      className="relative h-10 w-full overflow-hidden"
+      className={twMerge("relative h-10 w-full overflow-hidden", className)}
       ref={containerRef}
       onMouseEnter={(onlyOnHover && (() => setHovering(true))) || undefined}
       onMouseLeave={(onlyOnHover && (() => setHovering(false))) || undefined}
     >
-      <h2 className="absolute w-fit text-nowrap text-4xl" ref={titleRef}>
+      <h2 className="absolute w-fit text-nowrap" ref={titleRef}>
         {children}
       </h2>
     </div>

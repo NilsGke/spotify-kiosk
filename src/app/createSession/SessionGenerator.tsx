@@ -8,8 +8,9 @@ import { api } from "~/trpc/react";
 import toast from "react-simple-toasts";
 import { useRouter } from "next/navigation";
 import { env } from "~/env";
+import type { Market } from "@spotify/web-api-ts-sdk";
 
-export default function SessionGenerator() {
+export default function SessionGenerator({ markets }: { markets: Market[] }) {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [permissions, setPermissions] = useState<SessionPermissions>({
@@ -18,12 +19,14 @@ export default function SessionGenerator() {
     permission_skip: false,
     permission_skipQueue: false,
   });
+  const [market, setMarket] = useState<Market | null>(null);
 
   const router = useRouter();
 
   const createMutation = api.session.create.useMutation({
     onSuccess({ code, name }) {
       toast(`✅ Created "${name}"`);
+      toast("⏳ forwarding...");
       router.push(env.NEXT_PUBLIC_APP_URL + "/session/" + code);
     },
     onError(error) {
@@ -42,15 +45,24 @@ export default function SessionGenerator() {
         name={name}
         password={password}
         permissions={permissions}
+        market={market}
+        availableMarkets={markets}
         onNameChange={setName}
         onPasswordChange={setPassword}
         onPermissionChange={setPermissions}
+        onMarketChange={setMarket}
       />
       <button
         onClick={() => {
+          if (name.length === 0) return toast("❕ name cannot be empty");
+          if (password.length < 4)
+            return toast("❕ Password must be at lease four characters long");
+          if (market === null) return toast("❕ you must select a market");
+
           createMutation.mutate({
             name,
             password,
+            market,
             ...permissions,
           });
         }}

@@ -1,6 +1,5 @@
 "use client";
 
-import Container from "./Container";
 import type { Episode, Queue, Track } from "@spotify/web-api-ts-sdk";
 import { itemIsTrack } from "~/helpers/itemTypeguards";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
@@ -80,7 +79,7 @@ export default function Queue({
   });
 
   return (
-    <Container className="flex max-h-full flex-col gap-2 overflow-y-scroll scrollbar scrollbar-track-transparent scrollbar-thumb-zinc-600">
+    <>
       <h2 className="">Currently Playing</h2>
       <div ref={currentContainerRef}>
         <Item data={queue?.currently_playing ?? null} />
@@ -106,7 +105,7 @@ export default function Queue({
               />
             ))}
       </div>
-    </Container>
+    </>
   );
 }
 

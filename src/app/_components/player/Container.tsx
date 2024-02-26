@@ -9,15 +9,13 @@ export default function Container({
   className?: string;
 }) {
   return (
-    <div className="h-full w-full">
-      <div
-        className={twMerge(
-          "h-full w-full rounded-xl border border-zinc-600 p-2",
-          className,
-        )}
-      >
-        {children}
-      </div>
+    <div
+      className={twMerge(
+        "w-full rounded-xl border-none border-zinc-600 bg-zinc-900 p-2 lg:h-full",
+        className,
+      )}
+    >
+      {children}
     </div>
   );
 }

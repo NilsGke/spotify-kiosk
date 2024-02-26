@@ -5,9 +5,8 @@ import {
   useRef,
   useState,
   useEffect,
-  KeyboardEventHandler,
+  type KeyboardEventHandler,
 } from "react";
-import Container from "./Container";
 import { api } from "~/trpc/react";
 import { itemTypes } from "~/types/itemTypes";
 import type { Episode, ItemTypes, Page, Track } from "@spotify/web-api-ts-sdk";
@@ -28,6 +27,7 @@ import type { SpotifySession } from "@prisma/client";
 import { stringIsPermissionName } from "~/types/permissionTypes";
 import { sendSignal } from "~/helpers/signals";
 import toast from "react-simple-toasts";
+import Popup from "./popup/Popup";
 
 export default function Search({
   session,
@@ -173,7 +173,7 @@ export default function Search({
   };
 
   return (
-    <Container className="grid grid-rows-[2.75rem,1fr] gap-2">
+    <>
       {/* search bar */}
       <div className="relative">
         <div className="z-10 h-11 w-full rounded-lg border-2 border-zinc-600 bg-transparent p-2 pl-1 text-transparent">
@@ -308,21 +308,26 @@ export default function Search({
         {/* search results */}
         {searchResults?.map((result) => (
           <ResultList
-            addToQueue={(item) => {
-              if (session) {
-                addToQueueMutation.mutate({
-                  code: session.code,
-                  password: session.password,
-                  songUri: item.uri,
-                });
-                sendSignal("updateQueue", {
-                  add: [item],
-                  remove: [],
-                });
-              }
-            }}
+            canAddToQueue={!!session?.permission_addToQueue}
+            addToQueue={
+              !!session?.permission_addToQueue
+                ? (item) => {
+                    if (session) {
+                      addToQueueMutation.mutate({
+                        code: session.code,
+                        password: session.password,
+                        songUri: item.uri,
+                      });
+                      sendSignal("updateQueue", {
+                        add: [item],
+                        remove: [],
+                      });
+                    }
+                  }
+                : undefined
+            }
             key={result.itemType}
-            resultPage={result.resultPage}
+            items={result.resultPage.items}
           />
         ))}
 
@@ -342,81 +347,104 @@ export default function Search({
           </>
         )}
       </div>
-    </Container>
+      {session && (
+        <Popup
+          market={session.market}
+          code={session.code}
+          password={session.password}
+          addToQueuePermission={session.permission_addToQueue}
+        />
+      )}
+    </>
   );
 }
 
-function ResultList({
-  resultPage,
+export function ResultList({
+  items,
+  canAddToQueue,
   addToQueue,
+  minimal = false,
 }: {
-  resultPage: Page<SearchResult>;
-  addToQueue: (item: Track | Episode) => void;
+  items: Page<SearchResult>["items"];
+  canAddToQueue: boolean;
+  addToQueue: undefined | ((item: Track | Episode) => void);
+  minimal?: boolean;
 }) {
-  if (resultPage.items.filter((item) => item !== null).length === 0)
+  if (items.filter((item) => item !== null).length === 0)
     return (
       <div className="flex h-full w-full items-center justify-center text-sm text-zinc-500">
         no search results :(
       </div>
     );
 
-  return resultPage.items
-    .filter((item) => item !== null)
-    .map((item) => (
-      <ResultItem
-        key={item.id + (itemIsTrack(item) && item.album.id)} // need to add album to track because a track can be in multiple albums, resulting in the ids not being unique 🤡
-        addToQueue={addToQueue}
-        item={item}
-      />
-    ));
+  return (
+    <>
+      {items
+        .filter((item) => item !== null)
+        .map((item) => (
+          <ResultItem
+            canAddToQueue={canAddToQueue}
+            minimal={minimal}
+            key={item.id + (itemIsTrack(item) && item.album.id)} // need to add album to track because a track can be in multiple albums, resulting in the ids not being unique 🤡
+            addToQueue={addToQueue}
+            item={item}
+          />
+        ))}
+    </>
+  );
 }
 
-function ResultItem({
+export function ResultItem({
   item,
   addToQueue,
+  canAddToQueue,
+  minimal = false,
 }: {
   item: SearchResult;
-  addToQueue: (item: Track | Episode) => void;
+  addToQueue: undefined | ((item: Track | Episode) => void);
+  canAddToQueue: boolean;
+  minimal?: boolean;
 }) {
   if (itemIsAlbum(item))
     return (
       <ResultRow
+        minimal={minimal}
         imageUrl={item.images.at(-1)?.url ?? ""}
         name={item.name}
-        artist={item.artists.map((artist) => artist.name).join(", ")}
+        subtitle={item.artists.map((artist) => artist.name).join(", ")}
         extraInfo={item.release_date}
-        duration={item.total_tracks.toString() + " tracks"}
-        onClick={() => {
-          console.log(item.id);
-        }}
+        duration={
+          item.total_tracks.toString() +
+          " track" +
+          (item.total_tracks > 1 ? "s" : "")
+        }
+        onClick={() => sendSignal("openPopup", { item })}
       />
     );
 
   if (itemIsArtist(item))
     return (
       <ResultRow
+        minimal={minimal}
         imageUrl={item.images.at(-1)?.url ?? ""}
         name={item.name}
-        artist={null}
+        subtitle={null}
         extraInfo={item.followers.total.toLocaleString()}
         duration={""}
-        onClick={() => {
-          console.log(item.id);
-        }}
+        onClick={() => sendSignal("openPopup", { item })}
       />
     );
 
   if (itemIsAudiobook(item))
     return (
       <ResultRow
+        minimal={minimal}
         imageUrl={item.images.at(-1)?.url ?? ""}
         name={item.name}
-        artist={item.authors.map((author) => author.name).join(", ")}
+        subtitle={item.authors.map((author) => author.name).join(", ")}
         extraInfo={item.description}
         duration={item.total_chapters + " chapters"}
-        onClick={() => {
-          console.log(item.id);
-        }}
+        onClick={() => sendSignal("openPopup", { item })}
       />
     );
 
@@ -425,14 +453,13 @@ function ResultItem({
     if (lengthString.startsWith("00:")) lengthString = lengthString.slice(3, 8);
     return (
       <ResultRow
+        minimal={minimal}
         imageUrl={item.images.at(-1)?.url ?? ""}
         name={item.name}
-        artist={null}
+        subtitle={null}
         extraInfo={item.description}
         duration={lengthString}
-        onClick={() => {
-          console.log(item.id);
-        }}
+        onClick={() => sendSignal("openPopup", { item })}
       />
     );
   }
@@ -440,18 +467,17 @@ function ResultItem({
   if (itemIsPlaylist(item))
     return (
       <ResultRow
+        minimal={minimal}
         imageUrl={item.images.at(-1)?.url ?? ""}
         name={item.name}
-        artist={item.description}
+        subtitle={item.description}
         extraInfo={"by " + item.owner.display_name}
         // api does not know that tracks is a thing
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         duration={(
           item as unknown as { tracks: { total: number } }
         ).tracks.total.toString()}
-        onClick={() => {
-          console.log(item.id);
-        }}
+        onClick={() => sendSignal("openPopup", { item })}
       />
     );
 
@@ -460,12 +486,17 @@ function ResultItem({
     if (lengthString.startsWith("00:")) lengthString = lengthString.slice(3, 8);
     return (
       <ResultRow
+        minimal={minimal}
         imageUrl={item.album.images.at(-1)?.url ?? ""}
         name={item.name}
-        artist={item.artists.map((artist) => artist.name).join(", ")}
+        subtitle={item.artists.map((artist) => artist.name).join(", ")}
         extraInfo={item.album.name}
         duration={lengthString}
-        onClick={() => addToQueue(item)}
+        onClick={
+          addToQueue !== undefined && canAddToQueue
+            ? () => addToQueue && addToQueue(item)
+            : undefined
+        }
       />
     );
   }
@@ -473,14 +504,13 @@ function ResultItem({
   if (itemIsShow(item)) {
     return (
       <ResultRow
+        minimal={minimal}
         imageUrl={item.images.at(-1)?.url ?? ""}
         name={item.name}
-        artist={item.description}
+        subtitle={item.description}
         extraInfo={item.publisher}
         duration={item.total_episodes.toString()}
-        onClick={() => {
-          console.log(item.id);
-        }}
+        onClick={() => sendSignal("openPopup", { item })}
       />
     );
   }
@@ -491,51 +521,62 @@ function ResultItem({
 const ResultRow = ({
   imageUrl,
   name,
-  artist,
+  subtitle,
   extraInfo,
   duration,
   onClick,
+  minimal,
 }: {
   imageUrl: string;
   name: string;
-  artist: string | null;
+  subtitle: string | null;
   extraInfo: string;
   duration: string;
-  onClick: () => void;
+  onClick?: () => void;
+  minimal: boolean;
 }) => (
-  <div
+  <button
     onClick={onClick}
-    className="grid h-14 w-full max-w-full grid-cols-[40px,1.5fr,1fr,100px] items-center gap-4 rounded hover:bg-zinc-800"
+    disabled={onClick === undefined}
+    className={twMerge(
+      "grid min-h-12 w-full max-w-full grid-cols-[40px,1.5fr,1fr,100px] items-center gap-4 rounded hover:bg-zinc-800",
+      onClick !== undefined && "active cursor-pointer",
+      minimal && "grid-cols-[40px,1fr] text-sm",
+    )}
   >
     {/* eslint-disable-next-line @next/next/no-img-element */}
-    <img className="aspect-square h-8 w-8 rounded" src={imageUrl} alt="" />
+    <img className="ml-2 aspect-square size-8 rounded" src={imageUrl} alt="" />
 
     <div className="grid w-full grid-rows-[auto,auto]">
       <div
-        className="w-full overflow-hidden text-ellipsis whitespace-nowrap"
+        className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-start"
         title={name}
       >
         {name}
       </div>
-      {artist && (
+      {subtitle && (
         <div
-          className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs text-zinc-400"
-          title={artist}
+          className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-start text-xs text-zinc-400"
+          title={subtitle}
         >
-          {artist}
+          {subtitle}
         </div>
       )}
     </div>
 
-    <div
-      className="w-full overflow-hidden text-ellipsis whitespace-nowrap"
-      title={extraInfo}
-    >
-      {extraInfo}
-    </div>
+    {!minimal && (
+      <>
+        <div
+          className="w-full overflow-hidden text-ellipsis whitespace-nowrap"
+          title={extraInfo}
+        >
+          {extraInfo}
+        </div>
 
-    <div className="w-full">{duration}</div>
-  </div>
+        <div className="w-full">{duration}</div>
+      </>
+    )}
+  </button>
 );
 
 const PageButton: React.FC<

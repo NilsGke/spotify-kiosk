@@ -1,10 +1,9 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import type { Episode, PlaybackState, Track } from "@spotify/web-api-ts-sdk";
-import Container from "./Container";
 import SlideDisplay from "../SlideDisplay";
 import { itemIsTrack } from "../../../helpers/itemTypeguards";
+import Heart from "../Heart";
 
 type RealPlaybackState = Omit<PlaybackState, "item"> & {
   readonly item: Track | Episode | null;
@@ -19,10 +18,10 @@ export default function CurrentSong({
 
   if (playbackState === null)
     return (
-      <Container>
-        <div className="aspect-square h-auto w-full overflow-hidden rounded-lg bg-zinc-800"></div>
+      <>
+        <div className="inline-block aspect-square size-32 overflow-hidden rounded-lg bg-zinc-800 md:size-56 lg:h-auto lg:w-full"></div>
         <div className="h-6 w-full">No track playing</div>
-      </Container>
+      </>
     );
 
   const image =
@@ -33,30 +32,40 @@ export default function CurrentSong({
         : playbackState.item.images[0];
 
   return (
-    <Container className="flex flex-col gap-4">
-      <div className="aspect-square h-auto w-full overflow-hidden rounded-lg bg-zinc-800">
-        {image && <img src={image.url} alt="track / episode art" />}
-      </div>
-      <SlideDisplay onlyOnHover>
-        {playbackState.item?.name ?? (
-          <span className="text-zinc-500">no title</span>
+    <>
+      <div className="grid grid-cols-[8rem,auto] gap-3 sm:grid-cols-2 md:grid-cols-1 lg:grid-rows-1">
+        <div className="inline-block aspect-square size-32 overflow-hidden rounded-lg bg-zinc-800 md:size-auto lg:h-auto lg:w-full">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {image && <img src={image.url} alt="track / episode art" />}
+        </div>
+        <div>
+          <SlideDisplay className="text-3xl lg:w-full" onlyOnHover>
+            {playbackState.item?.name ?? (
+              <span className="text-zinc-500">no title</span>
+            )}
+          </SlideDisplay>
+          <div className="text-zinc-500">
+            {playbackState.item &&
+              (itemIsTrack(playbackState.item)
+                ? playbackState.item.artists
+                    .map((artist) => artist.name)
+                    .join(", ")
+                : playbackState.item.show.publisher)}
+          </div>
+        </div>
+        {playbackState && playbackState.item && (
+          <Heart trackId={playbackState.item.id} />
         )}
-      </SlideDisplay>
-      <div className="text-zinc-500">
-        {playbackState.item &&
-          (itemIsTrack(playbackState.item)
-            ? playbackState.item.artists.map((artist) => artist.name).join(", ")
-            : playbackState.item.show.publisher)}
       </div>
-    </Container>
+    </>
   );
 }
 
 function Skeleton() {
   return (
-    <Container className="flex flex-col gap-3">
+    <>
       <div className="aspect-square h-auto w-full animate-pulse overflow-hidden rounded-lg bg-zinc-800"></div>
       <div className="h-6 w-full animate-pulse rounded-md bg-zinc-800"></div>
-    </Container>
+    </>
   );
 }
