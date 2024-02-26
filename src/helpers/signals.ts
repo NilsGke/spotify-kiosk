@@ -2,6 +2,7 @@
 
 import type { Episode, Track } from "@spotify/web-api-ts-sdk";
 import { useEffect } from "react";
+import type { SearchResult } from "./itemTypeguards";
 
 console.log("running");
 
@@ -17,6 +18,9 @@ interface SignalEventMap {
   }>;
   updatePlaystate: CustomEvent<{
     newItem: ItemUri[];
+  }>;
+  openPopup: CustomEvent<{
+    item: SearchResult;
   }>;
 }
 
