@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import SessionSettings from "../_components/SessionSettings";
-import { type SessionPermissions } from "~/types/permissionTypes";
+import {
+  defaultPermissions,
+  type SessionPermissions,
+} from "~/types/permissionTypes";
 import { twMerge } from "tailwind-merge";
 import { api } from "~/trpc/react";
 import toast from "react-simple-toasts";
@@ -13,12 +16,8 @@ import type { Market } from "@spotify/web-api-ts-sdk";
 export default function SessionGenerator({ markets }: { markets: Market[] }) {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
-  const [permissions, setPermissions] = useState<SessionPermissions>({
-    permission_addToQueue: false,
-    permission_playPause: false,
-    permission_skip: false,
-    permission_skipQueue: false,
-  });
+  const [permissions, setPermissions] =
+    useState<SessionPermissions>(defaultPermissions);
   const [market, setMarket] = useState<Market | null>(null);
 
   const router = useRouter();
@@ -53,6 +52,11 @@ export default function SessionGenerator({ markets }: { markets: Market[] }) {
         onMarketChange={setMarket}
       />
       <button
+        disabled={
+          createMutation.isLoading ||
+          createMutation.isSuccess ||
+          createMutation.isError
+        }
         onClick={() => {
           if (name.length === 0) return toast("❕ name cannot be empty");
           if (password.length < 4)
