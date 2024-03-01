@@ -1,4 +1,8 @@
-import { type AccessToken, SpotifyApi } from "@spotify/web-api-ts-sdk";
+import {
+  type AccessToken,
+  SpotifyApi,
+  type Market,
+} from "@spotify/web-api-ts-sdk";
 import { z } from "zod";
 import { env } from "~/env";
 import {
@@ -284,6 +288,12 @@ export const spotifyRouter = createTRPCRouter({
 
       return;
     }),
+
+  getAvailableMarkets: protectedProcedure.query(async ({ ctx }) => {
+    const { spotifyApi, error } = await getSpotifyApi(ctx.session.user.id);
+    if (error !== null) throw Error(error);
+    return (await spotifyApi.markets.getAvailableMarkets()).markets as Market[];
+  }),
 });
 
 function checkPermission(
