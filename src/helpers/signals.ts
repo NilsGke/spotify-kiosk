@@ -3,8 +3,7 @@
 import type { Episode, Track } from "@spotify/web-api-ts-sdk";
 import { useEffect } from "react";
 import type { SearchResult } from "./itemTypeguards";
-
-console.log("running");
+import type { SpotifySession } from "@prisma/client";
 
 type ItemUri = string;
 
@@ -21,6 +20,9 @@ interface SignalEventMap {
   }>;
   openPopup: CustomEvent<{
     item: SearchResult;
+  }>;
+  updateSession: CustomEvent<null | {
+    newSession: SpotifySession;
   }>;
 }
 
