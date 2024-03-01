@@ -24,10 +24,15 @@ import useDebounce from "~/hooks/useDebounce";
 import { twMerge } from "tailwind-merge";
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa6";
 import type { SpotifySession } from "@prisma/client";
-import { stringIsPermissionName } from "~/types/permissionTypes";
+import {
+  type SessionPermissions,
+  permissionDescription,
+  stringIsPermissionName,
+} from "~/types/permissionTypes";
 import { sendSignal } from "~/helpers/signals";
 import toast from "react-simple-toasts";
 import Popup from "./popup/Popup";
+import HoverInfo from "../HoverInfo";
 
 export default function Search({
   session,
@@ -284,16 +289,22 @@ export default function Search({
                   Object.entries(session)
                     .filter((a) => stringIsPermissionName(a[0]))
                     .map((keyval) => {
-                      const [permissionName, value] = keyval;
+                      const [permissionName, value] = keyval as [
+                        keyof SessionPermissions,
+                        boolean,
+                      ];
                       if (typeof value !== "boolean") return null;
                       if (value === false) return null;
 
                       return (
                         <div
                           key={permissionName}
-                          className="rounded border border-green-700 px-1 py-0.5 text-green-300"
+                          className="flex flex-nowrap items-center gap-2 rounded border border-green-700 px-1 py-0.5 text-green-300"
                         >
-                          {permissionName.replace("permission_", "")}
+                          {permissionName.replace("permission_", "")}{" "}
+                          <HoverInfo className="text-white">
+                            {permissionDescription[permissionName]}
+                          </HoverInfo>
                         </div>
                       );
                     })}
