@@ -22,7 +22,8 @@ export const spotifySessionPasswordZod = z
 
 export const spotifySessionCodeZod = z
   .string()
-  .min(4, "code must be at least four characters long");
+  .min(4, "code must be at least four characters long")
+  .regex(/^\d{4,}$/, "code can only contain numbers");
 
 const permissionZods: Record<keyof SessionPermissions, ZodBoolean> = {
   permission_addToQueue: z.boolean(),
@@ -97,6 +98,25 @@ export const sessionRouter = createTRPCRouter({
       else throw Error("❌ could not generate a unique session code");
     }),
 
+  delete: protectedProcedure
+    .input(
+      z.object({
+        code: z.string().min(4),
+      }),
+    )
+    .mutation(async ({ ctx, input: { code } }) => {
+      if (!ctx.session.user.id) throw Error("no user in session");
+
+      await new Promise((r) => setTimeout(r, 10000));
+
+      return await ctx.db.spotifySession.delete({
+        where: {
+          code,
+          adminId: ctx.session.user.id,
+        },
+      });
+    }),
+
   get: publicProcedure
     .input(
       z.object({
@@ -114,6 +134,34 @@ export const sessionRouter = createTRPCRouter({
       if (session === null) throw Error("could not get / find session");
       return session;
     }),
+
+  editSession: protectedProcedure
+    .input(
+      z.object({
+        code: z.string().min(4),
+        newSession: z
+          .object({
+            code: spotifySessionCodeZod,
+            password: spotifySessionPasswordZod,
+            market: z.enum(spotifyMarkets),
+            name: z.string().min(1),
+            ...permissionZods,
+          })
+          .partial(),
+      }),
+    )
+    .mutation(
+      async ({ ctx, input }) =>
+        await ctx.db.spotifySession.update({
+          where: {
+            code: input.code,
+            adminId: ctx.session.user.id,
+          },
+          data: {
+            ...input.newSession,
+          },
+        }),
+    ),
 
   checkExpiration: protectedProcedure.query(
     async ({ ctx }) => await checkExpiration(ctx.session.user.id),
