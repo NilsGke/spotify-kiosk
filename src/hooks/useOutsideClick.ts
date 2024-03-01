@@ -5,11 +5,6 @@ const useOutsideClick = (callback: () => unknown, active = true) => {
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      console.log(
-        ref.current,
-        e.target,
-        ref.current?.contains(e.target as Node),
-      );
       if (active && ref.current && !ref.current.contains(e.target as Node))
         callback();
     };
