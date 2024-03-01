@@ -107,8 +107,6 @@ export const sessionRouter = createTRPCRouter({
     .mutation(async ({ ctx, input: { code } }) => {
       if (!ctx.session.user.id) throw Error("no user in session");
 
-      await new Promise((r) => setTimeout(r, 10000));
-
       return await ctx.db.spotifySession.delete({
         where: {
           code,
