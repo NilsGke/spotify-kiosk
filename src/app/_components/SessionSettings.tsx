@@ -3,7 +3,11 @@
 import type { Market } from "@spotify/web-api-ts-sdk";
 import { useState } from "react";
 import { twMerge } from "tailwind-merge";
-import type { SessionPermissions } from "~/types/permissionTypes";
+import {
+  defaultPermissions,
+  permissionDescription,
+  type SessionPermissions,
+} from "~/types/permissionTypes";
 import HoverInfo from "./HoverInfo";
 
 export default function SessionSettings({
@@ -36,6 +40,10 @@ export default function SessionSettings({
         <label htmlFor="" className="w-full">
           <div>Session Name</div>
           <input
+            onKeyDown={(e) =>
+              e.key === "Enter" &&
+              (e.nativeEvent.target as HTMLInputElement).blur()
+            }
             onBlur={() => onNameChange(name)}
             onChange={(e) => setName(e.target.value)}
             value={name}
@@ -46,6 +54,10 @@ export default function SessionSettings({
         <label htmlFor="" className="w-full">
           <div>Session Passwort</div>
           <input
+            onKeyDown={(e) =>
+              e.key === "Enter" &&
+              (e.nativeEvent.target as HTMLInputElement).blur()
+            }
             onBlur={() => onPasswordChange(password)}
             onChange={(e) => setPassword(e.target.value)}
             value={password}
@@ -95,40 +107,28 @@ function PermissionSettings({
   permissions: SessionPermissions;
   onChange: (permissions: SessionPermissions) => void;
 }) {
-  // TODO: try to optimize this (find a general solution using the permission names and not have a component for each one)
   return (
     <>
       <h2 className="text-xl">User Permissions</h2>
-      <ToggleButton
-        name={"addToQueue"}
-        onChange={(val) =>
-          onChange({
-            ...permissions,
-            permission_addToQueue: val,
-          })
-        }
-        checked={permissions.permission_addToQueue}
-      />
-      <ToggleButton
-        name={"playPause"}
-        onChange={(val) =>
-          onChange({
-            ...permissions,
-            permission_playPause: val,
-          })
-        }
-        checked={permissions.permission_playPause}
-      />
-      <ToggleButton
-        name={"skip"}
-        onChange={(val) =>
-          onChange({
-            ...permissions,
-            permission_skip: val,
-          })
-        }
-        checked={permissions.permission_skip}
-      />
+
+      {Object.keys(defaultPermissions).map((pn) => {
+        const permissionName = pn as keyof SessionPermissions;
+
+        return (
+          <ToggleButton
+            key={permissionName}
+            name={permissionName}
+            info={permissionDescription[permissionName]}
+            onChange={(val) =>
+              onChange({
+                ...permissions,
+                [permissionName]: val,
+              })
+            }
+            checked={permissions[permissionName]}
+          />
+        );
+      })}
     </>
   );
 }
@@ -136,22 +136,24 @@ function PermissionSettings({
 function ToggleButton({
   checked,
   onChange,
+  info,
   name,
 }: {
   checked: boolean;
   onChange: (state: boolean) => void;
+  info: string;
   name: string;
 }) {
   return (
     <label
       className={twMerge(
-        "w-full cursor-pointer rounded border-2 px-2 py-1 text-center [&:has(input:focus)]:outline",
+        "flex w-full cursor-pointer items-center justify-center gap-2 rounded border-2 px-2 py-1 text-center [&:has(input:focus)]:outline",
         checked
           ? "border-green-700 text-green-300 hover:bg-green-950 active:bg-green-900"
           : " border-red-800 text-red-300 hover:bg-red-950 active:bg-red-900",
       )}
     >
-      {name}
+      {name} <HoverInfo className="text-white">{info}</HoverInfo>
       <input
         type="checkbox"
         name={name}
