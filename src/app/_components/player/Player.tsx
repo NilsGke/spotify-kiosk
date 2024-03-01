@@ -7,10 +7,11 @@ import CurrentSong from "./CurrentSong";
 import Queue from "./Queue";
 import SessionControls from "./SessionControls";
 import ReauthPopup from "./ReauthPopup";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { itemIsTrack } from "~/helpers/itemTypeguards";
 import toast from "react-simple-toasts";
 import Container from "./Container";
+import { useSignal } from "~/helpers/signals";
 
 const reauthErrorMessage =
   "Bad or expired token. This can happen if the user revoked a token or the access token has expired. You should re-authenticate the user.";
@@ -27,6 +28,18 @@ export default function Player({
   const sessionQuery = api.session.get.useQuery(
     { code, password },
     { refetchInterval: 60000, refetchOnWindowFocus: false, retryDelay: 30000 },
+  );
+
+  const [spotifySession, setSpotifySession] = useState(sessionQuery.data);
+  useSignal("updateSession", (data) =>
+    data === null
+      ? void sessionQuery.refetch()
+      : setSpotifySession(data.newSession),
+  );
+  // update spotifySession on query update
+  useEffect(
+    () => sessionQuery.data && setSpotifySession(sessionQuery.data),
+    [sessionQuery.data],
   );
 
   const { data: playbackState, refetch: refetchPlayback } =
@@ -87,7 +100,7 @@ export default function Player({
 
         {/* search */}
         <Container className="relative grid min-h-[500px] grid-rows-[2.75rem,1fr] gap-2 overflow-hidden md:col-start-2 md:row-span-2 md:row-start-1 lg:col-start-2 lg:row-span-1 lg:row-start-1">
-          <Search session={sessionQuery.data} />
+          <Search session={spotifySession} />
         </Container>
 
         {/* queue */}
@@ -96,7 +109,7 @@ export default function Player({
             code={code}
             password={password}
             queueData={queueData}
-            permissionSkipQueue={!!sessionQuery.data?.permission_skipQueue}
+            permissionSkipQueue={!!spotifySession?.permission_skipQueue}
             refreshQueue={() => {
               setTimeout(() => {
                 void refetchQueue();
@@ -107,15 +120,17 @@ export default function Player({
         </Container>
 
         {/* session controls */}
-        <Container className="lg:col-start-1 lg:row-start-2 ">
-          <SessionControls />
+        <Container className="lg:col-start-1 lg:row-start-2">
+          {admin && spotifySession && (
+            <SessionControls spotifySession={spotifySession} />
+          )}
         </Container>
 
         {/* playback controls */}
         <Container className="row-start-2 md:col-start-2 md:row-start-3 lg:col-start-2 lg:row-start-2">
           <PlayControls
             isAdmin={admin}
-            session={sessionQuery.data}
+            session={spotifySession}
             playbackState={playbackState}
             refreshPlayback={() => {
               setTimeout(() => {
