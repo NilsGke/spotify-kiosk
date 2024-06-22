@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode, useMemo } from "react";
+import { useState, type ReactNode, useMemo, useCallback } from "react";
 import {
   itemIsAlbum,
   itemIsArtist,
@@ -19,7 +19,7 @@ import { api } from "~/trpc/react";
 import Display from "./Display";
 import Album from "./Album";
 import Artist from "./Artist";
-import type { Market } from "@spotify/web-api-ts-sdk";
+import type { Episode, Market, Track } from "@spotify/web-api-ts-sdk";
 
 export default function Popup({
   code,
@@ -47,14 +47,24 @@ export default function Popup({
     setItem(item);
   });
 
-  const { mutate: addToQueue } = api.spotify.addToQueue.useMutation({
-    onSuccess() {
-      sendSignal("updateQueue", { add: [], remove: [] });
-    },
-    onError() {
-      sendSignal("updateQueue", { add: [], remove: [] });
+  const { mutate: mutateQueue } = api.spotify.addToQueue.useMutation({
+    onError(error, variables) {
+      sendSignal("updateQueue", { add: [], remove: [variables.songUri] });
     },
   });
+
+  const addToQueue = useCallback(
+    (item: Track | Episode) => {
+      mutateQueue({
+        code,
+        password,
+        songUri: item.uri,
+      });
+
+      sendSignal("updateQueue", { add: [item], remove: [] });
+    },
+    [code, mutateQueue, password],
+  );
 
   const content: ReactNode = useMemo(() => {
     if (!popupOpen) return null;
@@ -69,13 +79,7 @@ export default function Popup({
       return (
         <Album
           item={item}
-          addToQueue={(item) =>
-            addToQueue({
-              code,
-              password,
-              songUri: item.uri,
-            })
-          }
+          addToQueue={addToQueue}
           addToQueuePermission={addToQueuePermission}
         />
       );
@@ -85,13 +89,7 @@ export default function Popup({
         <Artist
           item={item}
           market={market}
-          addToQueue={(item) =>
-            addToQueue({
-              code,
-              password,
-              songUri: item.uri,
-            })
-          }
+          addToQueue={addToQueue}
           addToQueuePermission={addToQueuePermission}
         />
       );
@@ -135,15 +133,7 @@ export default function Popup({
 
     toast("❌ could not use item.type to specify what the content should be");
     return "could not specify content";
-  }, [
-    addToQueue,
-    addToQueuePermission,
-    code,
-    item,
-    market,
-    password,
-    popupOpen,
-  ]);
+  }, [addToQueue, addToQueuePermission, item, market, popupOpen]);
 
   if (popupOpen)
     return (
