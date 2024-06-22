@@ -12,6 +12,8 @@ import { itemIsTrack } from "~/helpers/itemTypeguards";
 import toast from "react-simple-toasts";
 import Container from "./Container";
 import { useSignal } from "~/helpers/signals";
+import Link from "next/link";
+import { IoMdTv } from "react-icons/io";
 
 const reauthErrorMessage =
   "Bad or expired token. This can happen if the user revoked a token or the access token has expired. You should re-authenticate the user.";
@@ -121,9 +123,18 @@ export default function Player({
 
         {/* session controls */}
         <Container className="lg:col-start-1 lg:row-start-2">
-          {admin && spotifySession && (
-            <SessionControls spotifySession={spotifySession} />
-          )}
+          <div className="grid h-full grid-flow-col content-center justify-center gap-3">
+            {admin && spotifySession && (
+              <SessionControls spotifySession={spotifySession} />
+            )}
+            <Link
+              title="TV-Mode"
+              href={window.location.href + "/tv"}
+              className="rounded-md border border-zinc-500 p-2"
+            >
+              <IoMdTv />
+            </Link>
+          </div>
         </Container>
 
         {/* playback controls */}
