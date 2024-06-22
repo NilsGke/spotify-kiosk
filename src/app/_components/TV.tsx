@@ -2,13 +2,16 @@
 
 import type { SpotifySession } from "@prisma/client";
 import type { PlaybackState } from "@spotify/web-api-ts-sdk";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { itemIsTrack } from "~/helpers/itemTypeguards";
 import { api } from "~/trpc/react";
 import { prominent } from "color.js";
 import { env } from "~/env";
 import { twMerge } from "tailwind-merge";
 import getColorBrightness from "~/helpers/colorBrightness";
+import getItemImage from "~/helpers/getItemImage";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
+import Link from "next/link";
 
 type HEX = `#${string}`;
 
@@ -31,22 +34,33 @@ export default function TV({
       },
     );
 
+  const { data: queue, refetch: refetchQueue } = api.spotify.getQueue.useQuery(
+    {
+      code: spotifySession.code,
+      password: spotifySession.password,
+    },
+    {
+      refetchInterval: 30000,
+    },
+  );
+
   const item = playback?.item;
-  const image =
-    item && (itemIsTrack(item) ? item.album.images.at(0) : item.images.at(0));
+  const image = useMemo(() => item && getItemImage(item), [item]);
   const artist =
     item &&
     (itemIsTrack(item)
       ? item.artists.map((artist) => artist.name).join(", ")
       : item.show.name);
-  console.log(artist);
 
-  // refresh playback on song end
+  // refresh playback and queue on song end
   useEffect(() => {
     if (!playback?.item) return;
 
     if (!itemIsTrack(playback.item)) return;
-    const songEnd = () => void refetchPlayback();
+    const songEnd = () => {
+      void refetchPlayback();
+      void refetchQueue();
+    };
 
     const songEndTimer = setTimeout(
       songEnd,
@@ -77,14 +91,14 @@ export default function TV({
   }, [image]);
 
   // hide mouse on idle
-  const [hideMouse, setHideMouse] = useState(false);
+  const [mouseMoving, setMouseMoving] = useState(false);
   useEffect(() => {
     let timer: NodeJS.Timeout | undefined;
 
     const mouseMove = () => {
       clearTimeout(timer);
-      setHideMouse(false);
-      timer = setTimeout(() => setHideMouse(true), 2000);
+      setMouseMoving(true);
+      timer = setTimeout(() => setMouseMoving(false), 2000);
     };
 
     document.addEventListener("mousemove", mouseMove);
@@ -94,11 +108,13 @@ export default function TV({
     };
   }, []);
 
+  const [queueRef] = useAutoAnimate();
+
   return (
     <div
       className={twMerge(
         "absolute left-0 top-0 flex h-screen w-screen items-center justify-center bg-orange-400 bg-cover bg-center backdrop-blur-md backdrop-brightness-50",
-        hideMouse && "cursor-none",
+        !mouseMoving && "cursor-none",
       )}
       style={{
         backgroundImage: backgroundColors
@@ -124,6 +140,20 @@ export default function TV({
           backgroundSize: "200px",
         }}
       ></div>
+
+      {/* back button */}
+      <Link
+        className={twMerge(
+          "absolute left-5 top-5 rounded p-2 backdrop-blur-md backdrop-brightness-95 transition hover:backdrop-brightness-90",
+          !mouseMoving && "opacity-0",
+        )}
+        style={{
+          color: textColor ?? "white",
+        }}
+        href={`${env.NEXT_PUBLIC_APP_URL}/session/${spotifySession.code}`}
+      >
+        &lt;- back to session
+      </Link>
 
       {/* content */}
       <div className="z-20 flex flex-col items-center justify-center gap-6">
@@ -161,6 +191,31 @@ export default function TV({
         >
           {artist}
         </h3>
+      </div>
+
+      {/* Queue bar */}
+      <div className="absolute bottom-0 w-full overflow-x-hidden p-3">
+        <div className="w-[10000%]" ref={queueRef}>
+          {queue?.queue.map((item) => (
+            <div
+              key={item.id}
+              className="mr-4 inline-block rounded p-1 backdrop-blur-3xl backdrop-brightness-95"
+            >
+              <div
+                className=" flex items-center gap-3 transition-colors"
+                style={{ color: textColor ?? "white" }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={getItemImage(item, 2).url}
+                  alt="album / episode image"
+                  className="aspect-square h-6 rounded"
+                />
+                {item.name}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
