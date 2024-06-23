@@ -133,6 +133,19 @@ export const sessionRouter = createTRPCRouter({
       return session;
     }),
 
+  list: protectedProcedure.query(
+    async ({ ctx }) =>
+      await ctx.db.spotifySession.findMany({
+        where: {
+          adminId: ctx.session.user.id,
+        },
+        select: {
+          code: true,
+          name: true,
+        },
+      }),
+  ),
+
   editSession: protectedProcedure
     .input(
       z.object({
