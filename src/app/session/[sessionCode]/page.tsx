@@ -27,29 +27,15 @@ export default async function page({
       </div>
     );
 
-  if (spotifySession.adminId === session?.user.id) {
-    const [queue, playback] = await Promise.all([
-      api.spotify.getQueue.query({
-        code: spotifySession.code,
-        password: spotifySession.password,
-      }),
-      api.spotify.getPlayback.query({
-        code: spotifySession.code,
-        password: spotifySession.password,
-      }),
-    ]);
-
+  if (spotifySession.adminId === session?.user.id)
     return (
       <Player
         code={spotifySession.code}
         password={spotifySession.password}
         initialSession={spotifySession}
-        initialPlayback={playback}
-        initialQueue={queue}
         admin
       />
     );
-  }
 
   const passwordCookieName = generatePwCookieName(
     spotifySession.code,
@@ -74,24 +60,11 @@ export default async function page({
       />
     );
 
-  const [queue, playback] = await Promise.all([
-    api.spotify.getQueue.query({
-      code: spotifySession.code,
-      password: spotifySession.password,
-    }),
-    api.spotify.getPlayback.query({
-      code: spotifySession.code,
-      password: spotifySession.password,
-    }),
-  ]);
-
   return (
     <Player
       code={spotifySession.code}
       password={spotifySession.password}
       initialSession={spotifySession}
-      initialPlayback={playback}
-      initialQueue={queue}
     />
   );
 }

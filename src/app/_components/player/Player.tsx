@@ -28,15 +28,11 @@ export default function Player({
   code,
   password,
   initialSession,
-  initialQueue,
-  initialPlayback,
 }: {
   admin?: boolean;
   code: string;
   password: string;
   initialSession: SpotifySession;
-  initialQueue: QueueType;
-  initialPlayback: PlaybackState;
 }) {
   const sessionQuery = api.session.get.useQuery(
     { code, password },
@@ -67,7 +63,6 @@ export default function Player({
         password,
       },
       {
-        initialData: initialPlayback,
         retry: false,
         onError(error) {
           if (error.message.includes(reauthErrorMessage))
@@ -83,7 +78,6 @@ export default function Player({
         password,
       },
       {
-        initialData: initialQueue,
         retry: false,
         onError(error) {
           if (error.message.includes(reauthErrorMessage))
