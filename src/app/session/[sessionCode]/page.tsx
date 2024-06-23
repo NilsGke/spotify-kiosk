@@ -5,6 +5,7 @@ import { db } from "~/server/db";
 import { cookies } from "next/headers";
 import generatePwCookieName from "~/helpers/generatePwCookieName";
 import PasswordInputField from "~/app/_components/PasswordInputField";
+import { api } from "~/trpc/server";
 
 export default async function page({
   params: { sessionCode },
@@ -15,15 +16,7 @@ export default async function page({
 }) {
   const [session, spotifySession] = await Promise.all([
     getServerAuthSession(),
-    db.spotifySession.findFirst({
-      where: { code: sessionCode },
-      select: {
-        adminId: true,
-        code: true,
-        password: true,
-        name: true,
-      },
-    }),
+    db.spotifySession.findFirst({ where: { code: sessionCode } }),
   ]);
 
   if (spotifySession === null)
@@ -34,14 +27,29 @@ export default async function page({
       </div>
     );
 
-  if (spotifySession.adminId === session?.user.id)
+  if (spotifySession.adminId === session?.user.id) {
+    const [queue, playback] = await Promise.all([
+      api.spotify.getQueue.query({
+        code: spotifySession.code,
+        password: spotifySession.password,
+      }),
+      api.spotify.getPlayback.query({
+        code: spotifySession.code,
+        password: spotifySession.password,
+      }),
+    ]);
+
     return (
       <Player
         code={spotifySession.code}
         password={spotifySession.password}
+        initialSession={spotifySession}
+        initialPlayback={playback}
+        initialQueue={queue}
         admin
       />
     );
+  }
 
   const passwordCookieName = generatePwCookieName(
     spotifySession.code,
@@ -66,7 +74,24 @@ export default async function page({
       />
     );
 
+  const [queue, playback] = await Promise.all([
+    api.spotify.getQueue.query({
+      code: spotifySession.code,
+      password: spotifySession.password,
+    }),
+    api.spotify.getPlayback.query({
+      code: spotifySession.code,
+      password: spotifySession.password,
+    }),
+  ]);
+
   return (
-    <Player code={spotifySession.code} password={spotifySession.password} />
+    <Player
+      code={spotifySession.code}
+      password={spotifySession.password}
+      initialSession={spotifySession}
+      initialPlayback={playback}
+      initialQueue={queue}
+    />
   );
 }

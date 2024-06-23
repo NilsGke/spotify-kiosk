@@ -14,6 +14,11 @@ import Container from "./Container";
 import { useSignal } from "~/helpers/signals";
 import Link from "next/link";
 import { IoMdTv } from "react-icons/io";
+import type { SpotifySession } from "@prisma/client";
+import type {
+  PlaybackState,
+  Queue as QueueType,
+} from "@spotify/web-api-ts-sdk";
 
 const reauthErrorMessage =
   "Bad or expired token. This can happen if the user revoked a token or the access token has expired. You should re-authenticate the user.";
@@ -22,14 +27,25 @@ export default function Player({
   admin = false,
   code,
   password,
+  initialSession,
+  initialQueue,
+  initialPlayback,
 }: {
   admin?: boolean;
   code: string;
   password: string;
+  initialSession: SpotifySession;
+  initialQueue: QueueType;
+  initialPlayback: PlaybackState;
 }) {
   const sessionQuery = api.session.get.useQuery(
     { code, password },
-    { refetchInterval: 60000, refetchOnWindowFocus: false, retryDelay: 30000 },
+    {
+      refetchInterval: 60000,
+      refetchOnWindowFocus: false,
+      retryDelay: 30000,
+      initialData: initialSession,
+    },
   );
 
   const [spotifySession, setSpotifySession] = useState(sessionQuery.data);
@@ -51,6 +67,7 @@ export default function Player({
         password,
       },
       {
+        initialData: initialPlayback,
         retry: false,
         onError(error) {
           if (error.message.includes(reauthErrorMessage))
@@ -66,6 +83,7 @@ export default function Player({
         password,
       },
       {
+        initialData: initialQueue,
         retry: false,
         onError(error) {
           if (error.message.includes(reauthErrorMessage))
