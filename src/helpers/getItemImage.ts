@@ -1,5 +1,5 @@
 import type { Episode, Image, Track } from "@spotify/web-api-ts-sdk";
-import { itemIsAlbum, itemIsEpisode, itemIsTrack } from "./itemTypeguards";
+import { itemIsEpisode, itemIsTrack } from "./itemTypeguards";
 
 /**
  *

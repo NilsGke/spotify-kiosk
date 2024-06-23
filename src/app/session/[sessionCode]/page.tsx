@@ -5,7 +5,6 @@ import { db } from "~/server/db";
 import { cookies } from "next/headers";
 import generatePwCookieName from "~/helpers/generatePwCookieName";
 import PasswordInputField from "~/app/_components/PasswordInputField";
-import { api } from "~/trpc/server";
 
 export default async function page({
   params: { sessionCode },

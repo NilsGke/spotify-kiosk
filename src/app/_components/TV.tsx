@@ -68,7 +68,7 @@ export default function TV({
     );
 
     return () => clearTimeout(songEndTimer);
-  }, [playback, refetchPlayback]);
+  }, [playback, refetchPlayback, refetchQueue]);
 
   // extract colors from image
   const imageRef = useRef<HTMLImageElement | null>(null);

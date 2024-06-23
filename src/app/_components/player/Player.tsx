@@ -15,10 +15,6 @@ import { useSignal } from "~/helpers/signals";
 import Link from "next/link";
 import { IoMdTv } from "react-icons/io";
 import type { SpotifySession } from "@prisma/client";
-import type {
-  PlaybackState,
-  Queue as QueueType,
-} from "@spotify/web-api-ts-sdk";
 
 const reauthErrorMessage =
   "Bad or expired token. This can happen if the user revoked a token or the access token has expired. You should re-authenticate the user.";

@@ -1,5 +1,4 @@
 import JoinSessionField from "~/app/_components/JoinSessionField";
-import Player from "~/app/_components/player/Player";
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
 import { cookies } from "next/headers";
@@ -8,7 +7,7 @@ import PasswordInputField from "~/app/_components/PasswordInputField";
 import TV from "~/app/_components/TV";
 import { getSpotifyApi } from "~/server/spotifyApi";
 import checkExpiration from "~/server/checkExpiration";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 export default async function TVPage({
   params: { sessionCode },
