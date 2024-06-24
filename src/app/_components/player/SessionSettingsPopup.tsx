@@ -77,6 +77,7 @@ export default function SessionSettingsPopup({
   return (
     <>
       <button
+        title="open settings"
         className="rounded-md border border-zinc-500 p-2"
         onClick={() => setPopupOpen(true)}
       >

@@ -69,6 +69,7 @@ export default function PlayControls({
         )}
       >
         <button
+          aria-label="skip song backwards"
           onClick={() =>
             session &&
             skipBackwardMutation.mutate({
@@ -82,6 +83,9 @@ export default function PlayControls({
         </button>
 
         <button
+          aria-label={`play/pause (song is currently ${
+            playbackState?.is_playing ? "playing" : "paused"
+          })`}
           disabled={
             session && session.permission_playPause === false && !isAdmin
           }
@@ -102,6 +106,7 @@ export default function PlayControls({
         </button>
 
         <button
+          aria-label="skip song"
           onClick={() =>
             session &&
             skipForwardMutation.mutate({

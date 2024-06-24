@@ -45,6 +45,7 @@ export default function DeleteSessionButton({
   return (
     <>
       <button
+        title="delete session"
         className="w-full rounded-md border border-zinc-500 p-2"
         onClick={() => setConfirmPopupOpen(true)}
       >
@@ -63,6 +64,7 @@ export default function DeleteSessionButton({
             <h2>Are you sure you want to delete &quot;{sessionName}&quot;?</h2>
             <div className="grid w-full grid-cols-2 gap-3">
               <button
+                aria-label="keep session"
                 className={twMerge(
                   "rounded-md border border-zinc-500 p-3 transition-colors hover:bg-zinc-700",
                   (isLoading || isSuccess) && "pointer-events-none opacity-50",
@@ -72,6 +74,7 @@ export default function DeleteSessionButton({
                 no, keep session
               </button>
               <button
+                aria-label="delete session (confirmation)"
                 disabled={isLoading || isSuccess}
                 className={twMerge(
                   "rounded-md border border-zinc-500 p-3 text-red-500 transition-colors hover:bg-red-400 [&:not(:disabled)]:hover:text-white",
