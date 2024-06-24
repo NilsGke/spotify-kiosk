@@ -1,5 +1,3 @@
-"use client";
-
 import type { SpotifySession } from "@prisma/client";
 import { IoMdPlayCircle } from "react-icons/io";
 import { MdPauseCircle } from "react-icons/md";

@@ -1,5 +1,3 @@
-"use client";
-
 import type { Market } from "@spotify/web-api-ts-sdk";
 import { useState } from "react";
 import { twMerge } from "tailwind-merge";

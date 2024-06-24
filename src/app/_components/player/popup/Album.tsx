@@ -1,5 +1,3 @@
-"use client";
-
 import type { Episode, SimplifiedAlbum, Track } from "@spotify/web-api-ts-sdk";
 import { api } from "~/trpc/react";
 import { ResultItem } from "../Search";

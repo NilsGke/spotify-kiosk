@@ -1,5 +1,3 @@
-"use client";
-
 import type { Episode, Queue, Track } from "@spotify/web-api-ts-sdk";
 import { itemIsTrack } from "~/helpers/itemTypeguards";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
