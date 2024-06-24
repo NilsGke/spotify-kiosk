@@ -301,10 +301,12 @@ function checkPermission(
   session: Session | null,
   permissionName: keyof SessionPermissions,
 ) {
-  if (
-    spotifySession.adminId !== session?.user.id &&
-    spotifySession[permissionName] === false
-  )
+  if (spotifySession.adminId === session?.user.id) return;
+
+  if (spotifySession.permission_requireLoggedIn === true && session === null)
+    throw Error("session requires you to be logged in");
+
+  if (spotifySession[permissionName] === false)
     throw Error("session permission does not allow you to toggle play/pause");
 }
 

@@ -9,6 +9,7 @@ import { IoMdSkipBackward } from "react-icons/io";
 import type { PlaybackState } from "@spotify/web-api-ts-sdk";
 import { twMerge } from "tailwind-merge";
 import { api } from "~/trpc/react";
+import toast from "react-simple-toasts";
 
 export default function PlayControls({
   session,
@@ -23,14 +24,17 @@ export default function PlayControls({
 }) {
   const playPauseMutation = api.spotify.togglePlayPause.useMutation({
     onSuccess: refreshPlayback,
+    onError: (error) => toast(error.message),
   });
 
   const skipForwardMutation = api.spotify.skipForward.useMutation({
     onSuccess: refreshPlayback,
+    onError: (error) => toast(error.message),
   });
 
   const skipBackwardMutation = api.spotify.skipBackward.useMutation({
     onSuccess: refreshPlayback,
+    onError: (error) => toast(error.message),
   });
 
   const PlayIcon =

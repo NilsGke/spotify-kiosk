@@ -13,6 +13,7 @@ export const defaultPermissions: {
   permission_playPause: false,
   permission_skip: false,
   permission_skipQueue: false,
+  permission_requireLoggedIn: false,
 };
 
 export const permissionDescription: {
@@ -22,6 +23,7 @@ export const permissionDescription: {
   permission_playPause: "toggle play / pause",
   permission_skip: "skip songs one by one",
   permission_skipQueue: "skip to a certain point in the queue",
+  permission_requireLoggedIn: "user must be logged in to interact",
 } as const;
 
 export const stringIsPermissionName = (

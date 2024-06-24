@@ -30,6 +30,7 @@ const permissionZods: Record<keyof SessionPermissions, ZodBoolean> = {
   permission_playPause: z.boolean(),
   permission_skip: z.boolean(),
   permission_skipQueue: z.boolean(),
+  permission_requireLoggedIn: z.boolean(),
 };
 
 export const sessionRouter = createTRPCRouter({
