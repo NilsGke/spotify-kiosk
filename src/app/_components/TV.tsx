@@ -129,7 +129,7 @@ export default function TV({
               hsl(240deg 100% 20%) 0%,
               hsl(289deg 100% 21%) 11%,
               hsl(55deg 100% 50%) 100%
-            );`,
+            )`,
       }}
     >
       {/* noise background */}
