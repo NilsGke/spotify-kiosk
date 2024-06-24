@@ -97,6 +97,24 @@ export const spotifyRouter = createTRPCRouter({
       return await spotifyApi.player.getUsersQueue();
     }),
 
+  getHistory: publicProcedure
+    .input(defaultSessionZodInput)
+    .query(async ({ ctx, input }) => {
+      const spotifySession = await ctx.db.spotifySession.findFirst({
+        where: { code: input.code },
+      });
+
+      if (spotifySession === null)
+        throw Error(`session (${input.code}) not found`);
+      if (spotifySession.password !== input.password)
+        throw Error("incorrect session password");
+
+      const { error, spotifyApi } = await getSpotifyApi(spotifySession.adminId);
+      if (error !== null) throw Error(error);
+
+      return await spotifyApi.player.getRecentlyPlayedTracks(10);
+    }),
+
   togglePlayPause: publicProcedure
     .input(defaultSessionZodInput)
     .mutation(async ({ ctx, input }) => {

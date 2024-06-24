@@ -4,4 +4,5 @@ export const scopes = [
   "user-modify-playback-state",
   "user-library-read",
   "user-library-modify",
+  "user-read-recently-played",
 ];

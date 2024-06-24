@@ -82,6 +82,19 @@ export default function Player({
       },
     );
 
+  const { data: historyData, refetch: refetchHistory } =
+    api.spotify.getHistory.useQuery(
+      { code, password },
+      {
+        retry: false,
+        onError(error) {
+          if (error.message.includes(reauthErrorMessage))
+            toast("🚩 host needs to reauth. Tell them to open the session");
+        },
+      },
+    );
+
+  // update on song end
   useEffect(() => {
     if (!playbackState?.item) return;
 
@@ -90,6 +103,7 @@ export default function Player({
       console.log("song finished");
       void refetchPlayback();
       void refetchQueue();
+      setTimeout(() => void refetchHistory(), 1000);
     };
 
     const songEndTimer = setTimeout(
@@ -98,7 +112,7 @@ export default function Player({
     );
 
     return () => clearTimeout(songEndTimer);
-  }, [playbackState, refetchPlayback, refetchQueue]);
+  }, [playbackState, refetchPlayback, refetchQueue, refetchHistory]);
 
   return (
     <>
@@ -110,7 +124,7 @@ export default function Player({
 
         {/* search */}
         <Container className="relative grid min-h-[500px] grid-rows-[2.75rem,1fr] gap-2 overflow-hidden md:col-start-2 md:row-span-2 md:row-start-1 lg:col-start-2 lg:row-span-1 lg:row-start-1">
-          <Search session={spotifySession} />
+          <Search session={spotifySession} history={historyData} />
         </Container>
 
         {/* queue */}
@@ -152,10 +166,9 @@ export default function Player({
             session={spotifySession}
             playbackState={playbackState}
             refreshPlayback={() => {
-              setTimeout(() => {
-                void refetchPlayback();
-                void refetchQueue();
-              }, 1000);
+              void refetchPlayback();
+              void refetchQueue();
+              void refetchHistory();
             }}
           />
         </Container>

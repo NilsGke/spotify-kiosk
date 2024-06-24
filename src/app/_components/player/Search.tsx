@@ -9,7 +9,13 @@ import {
 } from "react";
 import { api } from "~/trpc/react";
 import { itemTypes } from "~/types/itemTypes";
-import type { Episode, ItemTypes, Page, Track } from "@spotify/web-api-ts-sdk";
+import type {
+  Episode,
+  ItemTypes,
+  Page,
+  RecentlyPlayedTracksPage,
+  Track,
+} from "@spotify/web-api-ts-sdk";
 import {
   itemIsAlbum,
   itemIsArtist,
@@ -33,11 +39,14 @@ import { sendSignal } from "~/helpers/signals";
 import toast from "react-simple-toasts";
 import Popup from "./popup/Popup";
 import HoverInfo from "../HoverInfo";
+import TrackHistory from "./TrackHistory";
 
 export default function Search({
   session,
+  history,
 }: {
   session: SpotifySession | undefined;
+  history: RecentlyPlayedTracksPage | undefined;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const searchDebounce = useDebounce(searchTerm, 500);
@@ -310,7 +319,7 @@ export default function Search({
                     })}
               </div>
             </div>
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6"></div>
+            <TrackHistory history={history} />
           </div>
         )}
 
