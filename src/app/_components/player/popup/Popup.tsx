@@ -35,11 +35,7 @@ export default function Popup({
   const [popupOpen, setPopupOpen] = useState(false);
   const [item, setItem] = useState<SearchResult | null>(null);
 
-  const close = () => {
-    setPopupOpen(false);
-    console.log("close");
-    console.trace();
-  };
+  const close = () => setPopupOpen(false);
   useKeyboard((key) => key === "Escape" && close());
 
   useSignal("openPopup", ({ item }) => {
@@ -97,6 +93,7 @@ export default function Popup({
     if (itemIsAudiobook(item)) return "audio book not implement";
 
     if (itemIsEpisode(item))
+      // TODO: add episode pane
       return (
         <Display
           title={item.name}
@@ -108,6 +105,7 @@ export default function Popup({
       );
 
     if (itemIsPlaylist(item))
+      // TODO: add playlist pane
       return (
         <Display
           title={item.name}
@@ -119,6 +117,7 @@ export default function Popup({
       );
 
     if (itemIsShow(item))
+      // TODO: add show pane
       return (
         <Display
           title={item.name}

@@ -24,9 +24,6 @@ export default function EmptySearch({
   return (
     <div className="grid h-full w-full grid-cols-1 items-center justify-center justify-items-center gap-4 md:grid-cols-2 md:grid-rows-2">
       <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6">
-        start typing to search for a track
-      </div>
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6">
         <h2 className="mb-3 text-center">type @...</h2>
         <div className="flex flex-wrap gap-1">
           {itemTypes.map((typename) => (
