@@ -12,15 +12,17 @@ type RealPlaybackState = Omit<PlaybackState, "item"> & {
 export default function CurrentSong({
   playbackState,
 }: {
-  playbackState: RealPlaybackState | undefined;
+  playbackState: RealPlaybackState | null | undefined;
 }) {
   if (playbackState === undefined) return <Skeleton />;
 
   if (playbackState === null)
     return (
       <>
-        <div className="inline-block aspect-square size-32 overflow-hidden rounded-lg bg-zinc-800 md:size-56 lg:h-auto lg:w-full"></div>
-        <div className="h-6 w-full">No track playing</div>
+        <div className="flex aspect-square size-32 items-center justify-center overflow-hidden rounded-lg bg-zinc-800 text-zinc-600 md:size-56 lg:h-auto lg:w-full">
+          no Track Playing
+        </div>
+        <div className="h-6 w-full text-zinc-600">waiting for Track...</div>
       </>
     );
 
