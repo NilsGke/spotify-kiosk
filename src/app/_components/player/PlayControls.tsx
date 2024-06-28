@@ -8,6 +8,10 @@ import type { PlaybackState } from "@spotify/web-api-ts-sdk";
 import { twMerge } from "tailwind-merge";
 import { api } from "~/trpc/react";
 import toast from "react-simple-toasts";
+import DeviceList from "./DeviceList";
+import { useState } from "react";
+import useOutsideClick from "~/hooks/useOutsideClick";
+import { spotifyDeviceTypes } from "~/types/deviceTypes";
 
 export default function PlayControls({
   session,
@@ -16,7 +20,7 @@ export default function PlayControls({
   isAdmin,
 }: {
   session: SpotifySession | undefined;
-  playbackState: PlaybackState | undefined;
+  playbackState: PlaybackState | null | undefined;
   refreshPlayback: () => void;
   isAdmin: boolean;
 }) {
@@ -34,6 +38,17 @@ export default function PlayControls({
     onSuccess: refreshPlayback,
     onError: (error) => toast(error.message),
   });
+
+  // device picker
+  const [devicesOpen, setDevicesOpen] = useState(false);
+  const ref = useOutsideClick(() => setDevicesOpen(false), devicesOpen);
+
+  const deviceInfo =
+    playbackState !== null && playbackState !== undefined
+      ? spotifyDeviceTypes.find(
+          (device) => device.type === playbackState?.device.type.toLowerCase(),
+        )
+      : null;
 
   const PlayIcon =
     playbackState === undefined
@@ -120,8 +135,24 @@ export default function PlayControls({
         </button>
       </div>
 
-      <div className="flex w-full items-center justify-end text-xs">
-        listening on {playbackState?.device.name}
+      <div className="relative flex w-full items-center justify-end text-xs">
+        <button
+          disabled={!isAdmin}
+          onClick={() => setDevicesOpen((prev) => !prev)}
+          className={twMerge(
+            "flex items-center gap-2 rounded bg-zinc-900 px-2 py-1 outline outline-zinc-800",
+            isAdmin && "transition-colors hover:bg-zinc-800",
+          )}
+        >
+          {playbackState?.device.name} {deviceInfo && <deviceInfo.icon />}
+        </button>
+        {session && devicesOpen && (
+          <DeviceList
+            ref={ref}
+            session={session}
+            className="absolute bottom-10 min-w-48 outline outline-zinc-700"
+          />
+        )}
       </div>
     </div>
   );

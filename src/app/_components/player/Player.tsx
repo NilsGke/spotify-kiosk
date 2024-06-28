@@ -15,6 +15,7 @@ import { useSignal } from "~/helpers/signals";
 import Link from "next/link";
 import { IoMdTv } from "react-icons/io";
 import type { SpotifySession } from "@prisma/client";
+import NoPlaybackPopup from "./NoPlaybackPopup";
 
 const reauthErrorMessage =
   "Bad or expired token. This can happen if the user revoked a token or the access token has expired. You should re-authenticate the user.";
@@ -46,6 +47,8 @@ export default function Player({
       ? void sessionQuery.refetch()
       : setSpotifySession(data.newSession),
   );
+  useSignal("updatePlaybackState", () => void refetchPlayback());
+
   // update spotifySession on query update
   useEffect(
     () => sessionQuery.data && setSpotifySession(sessionQuery.data),
@@ -182,8 +185,12 @@ export default function Player({
             }}
           />
         </Container>
+
+        {admin && <ReauthPopup />}
+        {playbackState === null && (
+          <NoPlaybackPopup session={spotifySession} admin={admin} />
+        )}
       </div>
-      {admin && <ReauthPopup />}
     </>
   );
 }

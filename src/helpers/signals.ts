@@ -1,6 +1,6 @@
 "use client";
 
-import type { Episode, Track } from "@spotify/web-api-ts-sdk";
+import type { Episode, PlaybackState, Track } from "@spotify/web-api-ts-sdk";
 import { useEffect } from "react";
 import type { SearchResult } from "./itemTypeguards";
 import type { SpotifySession } from "@prisma/client";
@@ -15,9 +15,7 @@ interface SignalEventMap {
     add: (Track | Episode | ItemUri)[];
     remove: (Track | Episode | ItemUri)[];
   }>;
-  updatePlaystate: CustomEvent<{
-    newItem: ItemUri[];
-  }>;
+  updatePlaybackState: CustomEvent<null | Partial<PlaybackState>>;
   openPopup: CustomEvent<{
     item: SearchResult;
   }>;

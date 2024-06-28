@@ -333,6 +333,49 @@ export const spotifyRouter = createTRPCRouter({
     if (error !== null) throw Error(error);
     return (await spotifyApi.markets.getAvailableMarkets()).markets as Market[];
   }),
+
+  getAvalibleDevices: protectedProcedure
+    .input(defaultSessionZodInput)
+    .query(async ({ ctx, input }) => {
+      const spotifySession = await getSpotifySession(ctx.db, input);
+
+      if (ctx.session.user.id !== spotifySession.adminId)
+        throw Error("only admin can fetch avalible devices");
+
+      const { spotifyApi, error } = await getSpotifyApi(spotifySession.adminId);
+      if (error !== null)
+        throw Error(`could not get spotify api. Error: ${error}`);
+
+      const devices = (await spotifyApi.player.getAvailableDevices()).devices
+        .map((device) => ({
+          ...device,
+          type: device.type.toLowerCase() as SpotifyDeviceType,
+        }))
+        .sort((a, b) => (a.name > b.name ? 1 : -1));
+
+      return devices;
+    }),
+
+  startPlayback: protectedProcedure
+    .input(
+      defaultSessionZodInput.merge(
+        z.object({
+          deviceId: z.string(),
+        }),
+      ),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const spotifySession = await getSpotifySession(ctx.db, input);
+
+      if (ctx.session.user.id !== spotifySession.adminId)
+        throw Error("only admin can fetch avalible devices");
+
+      const { spotifyApi, error } = await getSpotifyApi(spotifySession.adminId);
+      if (error !== null)
+        throw Error(`could not get spotify api. Error: ${error}`);
+
+      await spotifyApi.player.transferPlayback([input.deviceId], true);
+    }),
 });
 
 function checkPermission(
