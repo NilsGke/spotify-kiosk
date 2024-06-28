@@ -13,6 +13,7 @@ export async function updateAccesToken(
       token_type: token.token_type,
       expires_at: Math.round(Date.now() / 1000 + token.expires_in),
       scope: token.scope,
+      refresh_token: token.refresh_token,
     },
   });
 }

@@ -4,6 +4,7 @@ import type { RefreshToken } from "./api/routers/spotify";
 import { env } from "~/env";
 import { db } from "./db";
 import { updateAccesToken } from "~/helpers/updateAccesToken";
+import sharedReauth from "~/helpers/sharedReauth";
 
 export default async function checkExpiration(userId: User["id"]) {
   const { error, spotifyApi } = await getSpotifyApi(userId);
@@ -12,11 +13,7 @@ export default async function checkExpiration(userId: User["id"]) {
     await spotifyApi.player.getPlaybackState();
   } catch (error) {
     try {
-      const newToken = await refreshToken(userId);
-      console.log(
-        `\x1b[33m new token: ${JSON.stringify(newToken, null, "  ")} \x1b[33m`,
-      );
-      await updateAccesToken(userId, newToken);
+      await sharedReauth(userId);
     } catch (error) {
       return { expired: true, error: error };
     }
@@ -25,7 +22,17 @@ export default async function checkExpiration(userId: User["id"]) {
   return { expired: false, error: null };
 }
 
-export async function refreshToken(userId: string) {
+/** generates new token and saves it in database */
+export async function refreshToken(userId: User["id"]) {
+  console.log(`refreshToken triggered with uid: ${userId}`);
+  const newToken = await getNewToken(userId);
+  await updateAccesToken(userId, newToken);
+  return newToken;
+}
+
+/** fetches token from spotify */
+export async function getNewToken(userId: string) {
+  console.log(`getNewToken triggered with uid: ${userId}`);
   const accountData = await db.account.findFirst({
     where: { userId },
   });
@@ -52,7 +59,6 @@ export async function refreshToken(userId: string) {
     "https://accounts.spotify.com/api/token",
     refreshOptions,
   );
-
   if (!res.ok) throw Error(`Token refresh failed with status: ${res.status}`);
 
   const newToken = (await res.json()) as RefreshToken;

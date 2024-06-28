@@ -1,7 +1,9 @@
+import "server-only";
 import {
   type AccessToken,
   SpotifyApi,
   type Market,
+  type PlaybackState,
 } from "@spotify/web-api-ts-sdk";
 import { z } from "zod";
 import { env } from "~/env";
@@ -12,13 +14,15 @@ import {
 } from "~/server/api/trpc";
 import { type db } from "~/server/db";
 import { spotifySessionCodeZod, spotifySessionPasswordZod } from "./session";
-import type { SpotifySession } from "@prisma/client";
+import type { SpotifySession, User } from "@prisma/client";
 import type { Session } from "next-auth";
 import { itemTypes } from "../../../types/itemTypes";
 import type { SessionPermissions } from "~/types/permissionTypes";
 import spotifyMarkets from "~/helpers/spotifyMarkets";
 import { api } from "~/trpc/server";
 import { getSpotifyApi } from "../../spotifyApi";
+import checkExpiration from "~/server/token";
+import type SpotifyDeviceType from "~/types/deviceTypes";
 
 const defaultSessionZodInput = z.object({
   code: spotifySessionCodeZod,
@@ -67,16 +71,15 @@ export const spotifyRouter = createTRPCRouter({
 
       const { error, spotifyApi } = await getSpotifyApi(spotifySession.adminId);
       if (error !== null) throw Error(error);
+      const pbState = await spotifyApi.player
+        .getPlaybackState()
+        .catch(
+          reauthCatcherFactory(spotifySession.adminId, (spotifyApi) =>
+            spotifyApi.player.getPlaybackState(),
+          ),
+        );
 
-      const pbState = await spotifyApi.player.getPlaybackState();
-      if (pbState.item === null) {
-        // try to get item via queue
-        const episode = (await spotifyApi.player.getUsersQueue())
-          .currently_playing;
-        if (episode !== null) pbState.item = episode;
-      }
-
-      return pbState;
+      return pbState as PlaybackState | null;
     }),
 
   getQueue: publicProcedure
@@ -94,7 +97,13 @@ export const spotifyRouter = createTRPCRouter({
       const { error, spotifyApi } = await getSpotifyApi(spotifySession.adminId);
       if (error !== null) throw Error(error);
 
-      return await spotifyApi.player.getUsersQueue();
+      return await spotifyApi.player
+        .getUsersQueue()
+        .catch(
+          reauthCatcherFactory(spotifySession.adminId, (spotifyApi) =>
+            spotifyApi.player.getUsersQueue(),
+          ),
+        );
     }),
 
   getHistory: publicProcedure
@@ -112,7 +121,13 @@ export const spotifyRouter = createTRPCRouter({
       const { error, spotifyApi } = await getSpotifyApi(spotifySession.adminId);
       if (error !== null) throw Error(error);
 
-      return await spotifyApi.player.getRecentlyPlayedTracks(10);
+      return await spotifyApi.player
+        .getRecentlyPlayedTracks(10)
+        .catch(
+          reauthCatcherFactory(spotifySession.adminId, (spotifyApi) =>
+            spotifyApi.player.getRecentlyPlayedTracks(10),
+          ),
+        );
     }),
 
   togglePlayPause: publicProcedure
@@ -261,7 +276,13 @@ export const spotifyRouter = createTRPCRouter({
       if (error !== null) throw Error(error);
 
       return (
-        await spotifyApi.currentUser.tracks.hasSavedTracks([input.trackId])
+        await spotifyApi.currentUser.tracks
+          .hasSavedTracks([input.trackId])
+          .catch(
+            reauthCatcherFactory(ctx.session.user.id, (spotifyApi) =>
+              spotifyApi.currentUser.tracks.hasSavedTracks([input.trackId]),
+            ),
+          )
       )[0];
     }),
 
@@ -335,14 +356,41 @@ async function getSpotifySession(
   const spotifySession = await database.spotifySession.findFirst({
     where: { code: creds.code, password: creds.password },
   });
-  if (spotifySession === null)
-    throw Error(
-      "could not get spotify session while trying to toggle play/pause",
-    );
+  if (spotifySession === null) throw Error("could not get spotify session");
   return spotifySession;
+}
+
+/** function that generates a catch function used to try to reauth the user if that is the error
+ * @param adminId id of the admin that should be reauthenticated
+ * @param callback callback that was initially tried but failed due to reauth error
+ * @returns catch function
+ */
+function reauthCatcherFactory<T>(
+  adminId: User["id"],
+  callback: (newSpotifyApi: SpotifyApi) => Promise<T>,
+) {
+  return async () => {
+    // check if token expired -> `checkExpiration` will generate a new one
+    const { expired, error } = await checkExpiration(adminId);
+    if (!expired) {
+      // get new SpotifyApi (with new token)
+      const { spotifyApi, error } = await getSpotifyApi(adminId);
+      if (error !== null) throw Error(error);
+      // fire callback with new SpotifyApi
+      return await callback(spotifyApi);
+    } else {
+      // handle error
+      if (typeof error === "string") throw Error(error);
+      if (error instanceof Error) throw error;
+      console.error(error);
+      throw Error(
+        "^ unidentifiable error above while trying to automatically reauthenticate user",
+      );
+    }
+  };
 }
 
 export type RefreshToken = Pick<
   AccessToken,
   "access_token" | "expires_in" | "token_type"
-> & { scope: string };
+> & { scope: string } & Partial<Pick<AccessToken, "refresh_token">>;

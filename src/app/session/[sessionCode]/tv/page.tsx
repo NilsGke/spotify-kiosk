@@ -6,7 +6,7 @@ import generatePwCookieName from "~/helpers/generatePwCookieName";
 import PasswordInputField from "~/app/_components/PasswordInputField";
 import TV from "~/app/_components/TV";
 import { getSpotifyApi } from "~/server/spotifyApi";
-import checkExpiration from "~/server/checkExpiration";
+import checkExpiration from "~/server/token";
 import type { ReactNode } from "react";
 
 export default async function TVPage({

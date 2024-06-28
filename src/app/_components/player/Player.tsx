@@ -52,44 +52,54 @@ export default function Player({
     [sessionQuery.data],
   );
 
+  // PLAYBACK
   const { data: playbackState, refetch: refetchPlayback } =
     api.spotify.getPlayback.useQuery(
+      { code, password },
       {
-        code,
-        password,
-      },
-      {
-        retry: false,
-        onError(error) {
-          if (error.message.includes(reauthErrorMessage))
-            toast("🚩 host needs to reauth. Tell them to open the session");
+        retry: (number, error) => {
+          if (!error.message.includes(reauthErrorMessage)) return false;
+          if (number === 0) return true;
+          toast(
+            "🚩 Fetching Playback failed - host needs to reauth. Tell them to open the session",
+          );
+          return false;
+        },
+        refetchInterval: (playbackState, query) => {
+          if (playbackState === null) return 4000;
+          else return false;
         },
       },
     );
 
+  // QUEUE
   const { data: queueData, refetch: refetchQueue } =
     api.spotify.getQueue.useQuery(
+      { code, password },
       {
-        code,
-        password,
-      },
-      {
-        retry: false,
-        onError(error) {
-          if (error.message.includes(reauthErrorMessage))
-            toast("🚩 host needs to reauth. Tell them to open the session");
+        retry: (number, error) => {
+          if (!error.message.includes(reauthErrorMessage)) return false;
+          if (number === 0) return true;
+          toast(
+            "🚩 Fetching Queue failed - host needs to reauth. Tell them to open the session",
+          );
+          return false;
         },
       },
     );
 
+  // HISTORY
   const { data: historyData, refetch: refetchHistory } =
     api.spotify.getHistory.useQuery(
       { code, password },
       {
-        retry: false,
-        onError(error) {
-          if (error.message.includes(reauthErrorMessage))
-            toast("🚩 host needs to reauth. Tell them to open the session");
+        retry: (number, error) => {
+          if (!error.message.includes(reauthErrorMessage)) return false;
+          if (number === 0) return true;
+          toast(
+            "🚩 Fetching History failed - host needs to reauth. Tell them to open the session",
+          );
+          return false;
         },
       },
     );

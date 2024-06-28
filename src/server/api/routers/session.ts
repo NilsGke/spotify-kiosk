@@ -7,7 +7,7 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import Cookies from "js-cookie";
-import checkExpiration from "~/server/checkExpiration";
+import checkExpiration from "~/server/token";
 import spotifyMarkets from "~/helpers/spotifyMarkets";
 import {
   type SessionPermissions,

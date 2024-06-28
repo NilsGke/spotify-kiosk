@@ -5,7 +5,7 @@ import { getServerAuthSession } from "~/server/auth";
 import type { Market } from "@spotify/web-api-ts-sdk";
 import ReauthPopup from "../_components/player/ReauthPopup";
 import type { ReactNode } from "react";
-import checkExpiration from "~/server/checkExpiration";
+import checkExpiration from "~/server/token";
 
 export default async function page() {
   const session = await getServerAuthSession();
