@@ -6,6 +6,7 @@ import { createAvatar } from "@dicebear/core";
 import { initials } from "@dicebear/collection";
 import { signIn, signOut } from "next-auth/react";
 import { twMerge } from "tailwind-merge";
+import toast from "react-simple-toasts";
 
 export default function LoginButton({
   session,
@@ -17,7 +18,21 @@ export default function LoginButton({
   if (session === null)
     return (
       <button
-        onClick={() => signIn("spotify")}
+        onClick={() => {
+          toast("⏳signing in...");
+          void signIn("spotify")
+            .then(() => toast("✅ Login successful"))
+            .catch((error) => {
+              toast("❌ An error occured while signing in");
+              if (typeof error === "string") {
+                toast(error);
+                throw error;
+              } else if (error instanceof Error) {
+                toast(error.message);
+                throw error;
+              } else console.error(error);
+            });
+        }}
         className={twMerge(
           "rounded-[50px] bg-spotify px-4 py-3 text-lg transition hover:brightness-90 active:brightness-75",
           className,
@@ -55,7 +70,21 @@ function LogoutButton({
 
   return (
     <button
-      onClick={() => signOut()}
+      onClick={() => {
+        toast("⏳ signing out...");
+        signOut()
+          .then(() => toast("✅ Login successful"))
+          .catch((error) => {
+            toast("❌ An error occured while signing in");
+            if (typeof error === "string") {
+              toast(error);
+              throw error;
+            } else if (error instanceof Error) {
+              toast(error.message);
+              throw error;
+            } else console.error(error);
+          });
+      }}
       className={twMerge(
         "flex cursor-pointer items-center gap-3 rounded-[50px] bg-spotify py-1 pl-3 pr-1 text-lg brightness-100 transition-all hover:brightness-90 active:brightness-75",
         className,
