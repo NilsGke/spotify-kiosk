@@ -11,13 +11,16 @@ import {
 } from "~/types/permissionTypes";
 import HoverInfo from "../HoverInfo";
 import TrackHistory from "./TrackHistory";
+import Favourites from "./Favourites";
 
 export default function EmptySearch({
   session,
+  isAdmin,
   setSearch,
   history,
 }: {
   session: SpotifySession | undefined;
+  isAdmin: boolean;
   setSearch: (term: `@${ItemTypes} `) => void;
   history: RecentlyPlayedTracksPage | undefined;
 }) {
@@ -66,6 +69,7 @@ export default function EmptySearch({
         </div>
       </div>
       <TrackHistory history={history} />
+      <Favourites spotifySession={session} isAdmin={isAdmin} />
     </div>
   );
 }
