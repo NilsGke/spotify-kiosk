@@ -5,8 +5,9 @@ import {
   type Market,
   type PlaybackState,
   type MaxInt,
+  type Track,
 } from "@spotify/web-api-ts-sdk";
-import { z } from "zod";
+import { type ZodType, z } from "zod";
 import { env } from "~/env";
 import {
   createTRPCRouter,
@@ -285,6 +286,22 @@ export const spotifyRouter = createTRPCRouter({
             ),
           )
       )[0];
+    }),
+
+  hasSavedTracks: protectedProcedure
+    .input(z.array<ZodType<Track["id"]>>(z.string()))
+    .query(async ({ ctx, input: trackIds }) => {
+      const { spotifyApi, error } = await getSpotifyApi(ctx.session.user.id);
+      if (error !== null) throw Error(error);
+      const booleans =
+        await spotifyApi.currentUser.tracks.hasSavedTracks(trackIds);
+
+      const mapped = trackIds.map((id, index) => ({
+        id,
+        saved: booleans.at(index) ?? false,
+      }));
+
+      return mapped;
     }),
 
   saveTrack: protectedProcedure

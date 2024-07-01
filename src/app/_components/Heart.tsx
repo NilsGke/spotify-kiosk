@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { env } from "~/env";
+import { sendSignal } from "~/helpers/signals";
 import { api } from "~/trpc/react";
 
 export default function Heart({ trackId }: { trackId: string }) {
@@ -19,13 +20,25 @@ export default function Heart({ trackId }: { trackId: string }) {
 
   const saveQuery = api.spotify.saveTrack.useMutation({
     onMutate: () => setSaved(true),
-    onError: () => refetch(),
-    onSuccess: () => setSaved(true),
+    onError: () => {
+      setSaved(false);
+      sendSignal("updateLikes", null);
+    },
+    onSuccess: () => {
+      void refetch();
+      sendSignal("updateLikes", null);
+    },
   });
   const removeQuery = api.spotify.removeSavedTrack.useMutation({
     onMutate: () => setSaved(false),
-    onError: () => refetch(),
-    onSuccess: () => setSaved(false),
+    onError: () => {
+      void refetch();
+      sendSignal("updateLikes", null);
+    },
+    onSuccess: () => {
+      setSaved(false);
+      sendSignal("updateLikes", null);
+    },
   });
 
   // updated saved on new query data

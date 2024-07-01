@@ -22,6 +22,7 @@ interface SignalEventMap {
   updateSession: CustomEvent<null | {
     newSession: SpotifySession;
   }>;
+  updateLikes: CustomEvent<Partial<{ add: Track[]; remove: Track[] } | null>>;
 }
 
 interface SignalElement extends Element {

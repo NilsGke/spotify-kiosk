@@ -3,6 +3,9 @@
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import type { RecentlyPlayedTracksPage } from "@spotify/web-api-ts-sdk";
 import getItemImage from "~/helpers/getItemImage";
+import { api } from "~/trpc/react";
+import { sendSignal, useSignal } from "~/helpers/signals";
+import ControlledHeart from "./ControlledHeart";
 
 export default function TrackHistory({
   history,
@@ -10,6 +13,14 @@ export default function TrackHistory({
   history: RecentlyPlayedTracksPage | undefined;
 }) {
   const [listRef] = useAutoAnimate<HTMLDivElement>();
+
+  const { data: savedTracksData, refetch: refetchSavedTracks } =
+    api.spotify.hasSavedTracks.useQuery(
+      history?.items.map((item) => item.track.id) ?? [],
+      { enabled: history !== undefined },
+    );
+
+  useSignal("updateLikes", () => void refetchSavedTracks());
 
   return (
     <div className="h-full w-full max-w-xl rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6">
@@ -26,7 +37,13 @@ export default function TrackHistory({
             />
           ))}
 
-        {history?.items.map((item) => {
+        {history?.items.map((item, index) => {
+          const savedAtIndex = savedTracksData?.at(index);
+          const savedTrackData =
+            savedAtIndex ??
+            savedTracksData?.find((track) => track.id === item.track.id);
+          const savedTrack = savedTrackData?.saved;
+
           const image = getItemImage(item.track, 2);
           const playedAt = new Date(item.played_at).toLocaleTimeString(
             undefined,
@@ -38,7 +55,7 @@ export default function TrackHistory({
           return (
             <div
               key={item.played_at}
-              className="grid w-full grid-cols-[50px_35px_1fr_auto] items-center rounded p-1 text-sm"
+              className="group grid w-full grid-cols-[50px_35px_1fr_50px] items-center rounded p-1 text-sm"
             >
               <div className="text-xs text-zinc-500">{playedAt}</div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -51,6 +68,19 @@ export default function TrackHistory({
               />
               <div className="inline-block overflow-hidden overflow-ellipsis whitespace-nowrap text-xs">
                 {item.track.name}
+              </div>
+              <div>
+                {savedTrack !== undefined && (
+                  <div className="size-4 opacity-50 transition-opacity group-hover:opacity-100">
+                    <ControlledHeart
+                      trackId={item.track.id}
+                      isSaved={savedTrack ?? false}
+                      onLikeChange={(event) =>
+                        sendSignal("updateLikes", { [event]: [item.track] })
+                      }
+                    />
+                  </div>
+                )}
               </div>
             </div>
           );
