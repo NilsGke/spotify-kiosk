@@ -137,7 +137,11 @@ export default function Player({
 
         {/* search */}
         <Container className="relative grid min-h-[500px] grid-rows-[2.75rem,1fr] gap-2 overflow-hidden md:col-start-2 md:row-span-2 md:row-start-1 lg:col-start-2 lg:row-span-1 lg:row-start-1">
-          <Search session={spotifySession} history={historyData} />
+          <Search
+            session={spotifySession}
+            history={historyData}
+            isAdmin={admin}
+          />
         </Container>
 
         {/* queue */}

@@ -38,9 +38,11 @@ import EmptySearch from "./EmptySearch";
 export default function Search({
   session,
   history,
+  isAdmin,
 }: {
   session: SpotifySession | undefined;
   history: RecentlyPlayedTracksPage | undefined;
+  isAdmin: boolean;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const searchDebounce = useDebounce(searchTerm, 500);
@@ -266,6 +268,7 @@ export default function Search({
         {searchTerm.length === 0 && searchResults === undefined && (
           <EmptySearch
             session={session}
+            isAdmin={isAdmin}
             history={history}
             setSearch={(term) => {
               setSearchTerm(term);

@@ -1,0 +1,128 @@
+"use client";
+
+import type { SavedTrack } from "@spotify/web-api-ts-sdk";
+import { useCallback, useMemo, useRef } from "react";
+import getItemImage from "~/helpers/getItemImage";
+import { api } from "~/trpc/react";
+import { FaRegHeart } from "react-icons/fa";
+import type { SpotifySession } from "@prisma/client";
+import { sendSignal } from "~/helpers/signals";
+import LoginButton from "../LoginButton";
+
+const limit = 9;
+
+export default function Favourites({
+  spotifySession,
+  isAdmin,
+}: {
+  spotifySession: SpotifySession | undefined;
+  isAdmin: boolean;
+}) {
+  const { mutate: addSongToQueue } = api.spotify.addToQueue.useMutation({
+    onSettled: () => sendSignal("updateQueue", null), // update queue on success to move song to correct queue position and on error to remove song from queue
+  });
+
+  const { data, error, fetchNextPage, hasNextPage, isFetching, isLoading } =
+    api.spotify.getFavourites.useInfiniteQuery(
+      { limit },
+      {
+        getNextPageParam: (lastPage) => lastPage.nextCursor,
+        retry: 1,
+        initialCursor: 0,
+        refetchInterval: false,
+        refetchIntervalInBackground: false,
+        refetchOnWindowFocus: false,
+      },
+    );
+
+  const observer = useRef<IntersectionObserver>();
+
+  const lastElementRef = useCallback(
+    (node: HTMLButtonElement) => {
+      if (isLoading) return;
+
+      if (observer.current) observer.current.disconnect();
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (
+          entries[0] &&
+          entries[0].isIntersecting &&
+          hasNextPage &&
+          !isFetching
+        )
+          void fetchNextPage();
+      });
+
+      if (node) observer.current.observe(node);
+    },
+    [fetchNextPage, hasNextPage, isFetching, isLoading],
+  );
+
+  const tracks = useMemo(
+    () =>
+      data?.pages.reduce<SavedTrack[]>(
+        (acc, page) => [...acc, ...page.items],
+        [],
+      ),
+    [data],
+  );
+
+  return (
+    <div className="h-full w-full max-w-xl rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6">
+      <h2 className="mb-3 h-[20px] text-center">
+        your favourites <FaRegHeart className="inline-block" />
+      </h2>
+      <div className="flex h-[calc(100%-32px)] flex-wrap overflow-y-scroll scrollbar scrollbar-track-transparent scrollbar-thumb-zinc-600">
+        {tracks?.map(({ track }) => {
+          const image = getItemImage(track, 2);
+          return (
+            <button
+              key={track.id}
+              ref={lastElementRef}
+              onClick={() => {
+                if (!isAdmin && spotifySession?.permission_addToQueue) return;
+
+                spotifySession &&
+                  addSongToQueue({
+                    code: spotifySession.code,
+                    password: spotifySession.password,
+                    songUri: track.uri,
+                  });
+
+                sendSignal("updateQueue", { add: [track], remove: [] });
+              }}
+              className="grid w-full grid-cols-[35px_1fr_auto] items-center rounded p-1 text-sm hover:bg-zinc-800"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={image.url}
+                alt="album image"
+                className="size-6 rounded-sm"
+              />
+              <div className="truncate text-start text-xs">{track.name}</div>
+            </button>
+          );
+        })}
+        {(isLoading || isFetching) &&
+          [...Array(limit).keys()].map((v, i) => (
+            <div
+              key={i}
+              className="mb-2 h-6 w-full animate-pulse bg-zinc-800"
+            />
+          ))}
+        {error &&
+          (error.message === "UNAUTHORIZED" ? (
+            <div className="flex size-full flex-wrap content-center items-center justify-center gap-2 text-sm text-zinc-500">
+              <LoginButton
+                session={null}
+                className="borderzinc-700 rounded-md border bg-transparent px-2 py-1 text-sm text-white"
+              />
+              <div>to view your saved tracks</div>
+            </div>
+          ) : (
+            error.message
+          ))}
+      </div>
+    </div>
+  );
+}
