@@ -73,7 +73,7 @@ export default function TV({
   // extract colors from image
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [backgroundColors, setBackgroundColors] = useState<HEX[] | null>(null);
-  const [textColor, setTextColor] = useState<string | null>(null);
+  const [textColor, setTextColor] = useState<"black" | "white" | null>(null);
   useEffect(() => {
     if (image === undefined || imageRef.current === null) {
       setBackgroundColors(null);
@@ -163,15 +163,16 @@ export default function TV({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               ref={imageRef}
-              className="absolute z-10 size-full rounded-md"
+              className="absolute size-full rounded-md blur-2xl"
               src={image.url}
               alt="album / episode art"
             />
           )}
+          {/* album image */}
           {image && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              className="absolute top-0 size-full rounded-md blur-2xl"
+              className="absolute top-0 z-10 size-full rounded-xl "
               src={image.url}
               alt="album / episode art"
             />
@@ -199,7 +200,12 @@ export default function TV({
           {queue?.queue.map((item) => (
             <div
               key={item.id}
-              className="mr-4 inline-block rounded p-1 backdrop-blur-3xl backdrop-brightness-95"
+              className={twMerge(
+                "mr-4 inline-block rounded p-1 backdrop-blur-3xl",
+                textColor === "white"
+                  ? "backdrop-brightness-125"
+                  : "backdrop-brightness-95",
+              )}
             >
               <div
                 className=" flex items-center gap-3 transition-colors"
