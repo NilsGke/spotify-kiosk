@@ -4,6 +4,7 @@ import {
   SpotifyApi,
   type Market,
   type PlaybackState,
+  type MaxInt,
 } from "@spotify/web-api-ts-sdk";
 import { z } from "zod";
 import { env } from "~/env";
@@ -326,6 +327,30 @@ export const spotifyRouter = createTRPCRouter({
       await spotifyApi.currentUser.tracks.removeSavedTracks([input.trackId]);
 
       return;
+    }),
+
+  getFavourites: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().nonnegative().max(49).int() as z.ZodType<MaxInt<49>>,
+        cursor: z.number(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { spotifyApi, error } = await getSpotifyApi(ctx.session.user.id);
+      if (error !== null) throw Error(error);
+
+      const limit = input.limit ?? 15;
+      const { cursor } = input;
+
+      const data = await spotifyApi.currentUser.tracks.savedTracks(
+        limit,
+        cursor ?? undefined,
+      );
+
+      const nextCursor = data.offset + data.items.length;
+
+      return { nextCursor, ...data };
     }),
 
   getAvailableMarkets: protectedProcedure.query(async ({ ctx }) => {
