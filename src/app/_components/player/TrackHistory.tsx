@@ -55,7 +55,7 @@ export default function TrackHistory({
           return (
             <div
               key={item.played_at}
-              className="group grid w-full grid-cols-[50px_35px_1fr_50px] items-center rounded p-1 text-sm"
+              className="group grid w-full grid-cols-[50px_35px_1fr_50px] items-center rounded p-1 text-sm hover:bg-zinc-800"
             >
               <div className="text-xs text-zinc-500">{playedAt}</div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -71,7 +71,7 @@ export default function TrackHistory({
               </div>
               <div>
                 {savedTrack !== undefined && (
-                  <div className="size-4 opacity-50 transition-opacity group-hover:opacity-100">
+                  <div className="size-4 opacity-20 transition-opacity duration-300  group-hover:opacity-100 group-hover:duration-0">
                     <ControlledHeart
                       trackId={item.track.id}
                       isSaved={savedTrack ?? false}
