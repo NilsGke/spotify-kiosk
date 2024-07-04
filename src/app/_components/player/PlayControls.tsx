@@ -12,6 +12,7 @@ import DeviceList from "./DeviceList";
 import { useState } from "react";
 import useOutsideClick from "~/hooks/useOutsideClick";
 import { spotifyDeviceTypes } from "~/types/deviceTypes";
+import QRCode from "./QRCode";
 
 export default function PlayControls({
   session,
@@ -58,23 +59,26 @@ export default function PlayControls({
         : IoMdPlayCircle;
 
   return (
-    <div className="grid h-full w-full grid-cols-3 content-center justify-items-center">
-      <div className="grid w-full grid-cols-1 grid-rows-2 gap-2 text-xs">
-        <div
-          className={twMerge(
-            "",
-            session === undefined && "h-4 w-40 animate-pulse bg-zinc-800",
-          )}
-        >
-          {session?.name}
-        </div>
-        <div
-          className={twMerge(
-            "",
-            session === undefined && "h-4 w-40 animate-pulse bg-zinc-800",
-          )}
-        >
-          Session Code: {session?.code}
+    <div className="grid h-full w-full grid-cols-3 content-stretch  justify-items-center">
+      <div className="grid max-h-full grid-cols-[1fr_auto] grid-rows-[100%] items-center gap-3 justify-self-start">
+        <QRCode session={session} />
+        <div className="grid w-full grid-cols-1 grid-rows-2 items-center gap-2 text-xs">
+          <div
+            className={twMerge(
+              "h-4",
+              session === undefined && "h-4 w-40 animate-pulse bg-zinc-800",
+            )}
+          >
+            {session?.name}
+          </div>
+          <div
+            className={twMerge(
+              "h-4",
+              session === undefined && "h-4 w-40 animate-pulse bg-zinc-800",
+            )}
+          >
+            Session Code: {session?.code}
+          </div>
         </div>
       </div>
       <div

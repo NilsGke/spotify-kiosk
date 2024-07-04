@@ -12,8 +12,11 @@ import getColorBrightness from "~/helpers/colorBrightness";
 import getItemImage from "~/helpers/getItemImage";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import Link from "next/link";
+import { FiEye, FiEyeOff } from "react-icons/fi";
+import QRCode from "./player/QRCode";
 
 type HEX = `#${string}`;
+const mouseMoveTime = 1000;
 
 export default function TV({
   spotifySession,
@@ -98,7 +101,7 @@ export default function TV({
     const mouseMove = () => {
       clearTimeout(timer);
       setMouseMoving(true);
-      timer = setTimeout(() => setMouseMoving(false), 2000);
+      timer = setTimeout(() => setMouseMoving(false), mouseMoveTime);
     };
 
     document.addEventListener("mousemove", mouseMove);
@@ -109,6 +112,8 @@ export default function TV({
   }, []);
 
   const [queueRef] = useAutoAnimate();
+
+  const [showQrCode, setShowQrCode] = useState(false);
 
   return (
     <div
@@ -154,6 +159,81 @@ export default function TV({
       >
         &lt;- back to session
       </Link>
+
+      {/* QR button */}
+      <div
+        className={twMerge(
+          "group absolute right-5 top-5 size-32 rounded backdrop-blur-md backdrop-brightness-95 duration-200",
+          !mouseMoving && !showQrCode && "opacity-0",
+        )}
+      >
+        <button
+          onClick={() => setShowQrCode((prev) => !prev)}
+          className="relative size-full"
+        >
+          <QRCode
+            className={twMerge(
+              "size-32 transition duration-200 group-hover:blur-sm group-hover:brightness-75",
+              mouseMoving && "blur-sm brightness-75",
+              mouseMoving && showQrCode && "blur-none brightness-100",
+              !showQrCode && "opacity-50 blur-sm",
+            )}
+            margin={0}
+            color={{
+              dark:
+                textColor !== null
+                  ? textColor === "white"
+                    ? "#fff"
+                    : "#000"
+                  : "black",
+              light: "#0000",
+            }}
+            session={spotifySession}
+          />
+          <div
+            className={twMerge(
+              "absolute top-0 grid size-full items-center justify-center opacity-0 transition duration-200 group-hover:opacity-100",
+              !showQrCode && mouseMoving && "opacity-100",
+            )}
+          >
+            {showQrCode ? (
+              <FiEye
+                className="size-10"
+                style={{ color: textColor ?? "white" }}
+              />
+            ) : (
+              <FiEyeOff
+                className="size-10"
+                style={{ color: textColor ?? "white" }}
+              />
+            )}
+          </div>
+        </button>
+      </div>
+      {/* QR overlay */}
+      {/* {showQrCode && (
+        <div
+          className={twMerge(
+            "absolute right-5 top-5 overflow-hidden rounded transition-all",
+            mouseMoving && "top-20",
+          )}
+        >
+          <QRCode
+            className="size-32"
+            margin={0}
+            color={{
+              dark:
+                textColor !== null
+                  ? textColor === "white"
+                    ? "#fff"
+                    : "#000"
+                  : "black",
+              light: "#0000",
+            }}
+            session={spotifySession}
+          />
+        </div>
+      )} */}
 
       {/* content */}
       <div className="z-20 flex flex-col items-center justify-center gap-6">
