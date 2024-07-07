@@ -35,7 +35,7 @@ export default function QRCode({
         width: size,
       },
     );
-  }, [session, color]);
+  }, [session, color, margin]);
 
   return (
     <div
