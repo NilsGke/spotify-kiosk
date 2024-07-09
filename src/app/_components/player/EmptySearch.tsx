@@ -12,6 +12,7 @@ import {
 import HoverInfo from "../HoverInfo";
 import TrackHistory from "./TrackHistory";
 import Favourites from "./Favourites";
+import Log from "../Log";
 
 export default function EmptySearch({
   session,
@@ -26,8 +27,8 @@ export default function EmptySearch({
 }) {
   return (
     // fix grid situation
-    <div className="grid size-full grid-cols-1 items-center justify-center justify-items-center gap-4 md:grid-cols-2 md:grid-rows-[20%_calc(80%-20px)]">
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6">
+    <div className="grid size-full max-h-full max-w-full grid-cols-1 items-center justify-center justify-items-center gap-4 md:grid-cols-2 md:grid-rows-[auto_minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="size-full rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6">
         <h2 className="mb-3 text-center">type @...</h2>
         <div className="flex flex-wrap gap-1">
           {itemTypes.map((typename) => (
@@ -41,7 +42,7 @@ export default function EmptySearch({
           ))}
         </div>
       </div>
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6">
+      <div className="size-full rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6">
         <h2 className="mb-3 text-center">Your Permissions:</h2>
         <div className="flex flex-wrap justify-center gap-1">
           {session &&
@@ -71,6 +72,7 @@ export default function EmptySearch({
       </div>
       <TrackHistory history={history} />
       <Favourites spotifySession={session} isAdmin={isAdmin} />
+      <Log spotifySession={session} />
     </div>
   );
 }

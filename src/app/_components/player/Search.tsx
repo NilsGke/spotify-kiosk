@@ -257,7 +257,7 @@ export default function Search({
       {/* results */}
       <div
         className={twMerge(
-          "flex h-full w-full max-w-full flex-grow-0 flex-col gap-2 overflow-y-scroll scrollbar scrollbar-track-transparent scrollbar-thumb-zinc-600",
+          "flex h-full w-full max-w-full flex-grow-0 flex-col gap-2",
           isFetching && "overflow-hidden",
           searchTerm !== searchDebounce &&
             searchTerm !== "" &&

@@ -14,9 +14,9 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
-import { type db } from "~/server/db";
+import { db } from "~/server/db";
 import { spotifySessionCodeZod, spotifySessionPasswordZod } from "./session";
-import type { SpotifySession, User } from "@prisma/client";
+import type { Log, SpotifySession, User } from "@prisma/client";
 import type { Session } from "next-auth";
 import { itemTypes } from "../../../types/itemTypes";
 import type { SessionPermissions } from "~/types/permissionTypes";
@@ -132,6 +132,24 @@ export const spotifyRouter = createTRPCRouter({
         );
     }),
 
+  getTracks: publicProcedure
+    .input(
+      defaultSessionZodInput.merge(
+        z.object({
+          trackIds: z.array(z.string()),
+        }),
+      ),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const spotifySession = await getSpotifySession(ctx.db, input);
+
+      const { spotifyApi, error } = await getSpotifyApi(spotifySession.adminId);
+      if (error !== null)
+        throw Error(`could not get spotify api. Error: ${error}`);
+
+      return spotifyApi.tracks.get(input.trackIds);
+    }),
+
   togglePlayPause: publicProcedure
     .input(defaultSessionZodInput)
     .mutation(async ({ ctx, input }) => {
@@ -170,6 +188,13 @@ export const spotifyRouter = createTRPCRouter({
         throw Error("device id is null. Maybe its not playing?");
 
       await spotifyApi.player.skipToNext(deviceId);
+
+      void addLog(ctx.db, {
+        sessionId: spotifySession.id,
+        trackIds: [playbackState.item.id],
+        triggeredByUserId: ctx.session?.user.id ?? null,
+        type: "Skip",
+      });
     }),
 
   skipBackward: publicProcedure
@@ -220,6 +245,17 @@ export const spotifyRouter = createTRPCRouter({
         proms.push(spotifyApi.player.skipToNext(deviceId));
 
       await Promise.all(proms);
+
+      const skippedTrackIds = queue.queue
+        .slice(0, queueIndex)
+        .map((track) => track.id);
+
+      void addLog(ctx.db, {
+        sessionId: spotifySession.id,
+        trackIds: skippedTrackIds,
+        triggeredByUserId: ctx.session?.user.id ?? null,
+        type: "Skip",
+      });
     }),
 
   addToQueue: publicProcedure
@@ -233,6 +269,15 @@ export const spotifyRouter = createTRPCRouter({
         throw Error(`could not get spotify api. Error: ${error}`);
 
       await spotifyApi.player.addItemToPlaybackQueue(input.songUri);
+
+      const trackId = input.songUri.split(":").at(-1);
+      if (trackId === undefined) return;
+      void addLog(ctx.db, {
+        sessionId: spotifySession.id,
+        trackIds: [trackId],
+        triggeredByUserId: ctx.session?.user.id ?? null,
+        type: "AddToQueue",
+      });
     }),
   getAlbum: publicProcedure
     .input(
@@ -418,6 +463,26 @@ export const spotifyRouter = createTRPCRouter({
 
       await spotifyApi.player.transferPlayback([input.deviceId], true);
     }),
+
+  getLog: publicProcedure
+    .input(defaultSessionZodInput)
+    .query(async ({ ctx, input }) => {
+      const session = await getSpotifySession(ctx.db, input);
+
+      return ctx.db.log.findMany({
+        where: { sessionId: session.id },
+        orderBy: { id: "desc" },
+        include: {
+          triggeredBy: {
+            select: {
+              name: true,
+              image: true,
+            },
+          },
+        },
+        take: 10,
+      });
+    }),
 });
 
 function checkPermission(
@@ -479,3 +544,8 @@ export type RefreshToken = Pick<
   AccessToken,
   "access_token" | "expires_in" | "token_type"
 > & { scope: string } & Partial<Pick<AccessToken, "refresh_token">>;
+
+const addLog = async (
+  database: typeof db,
+  data: Omit<Log, "id" | "triggeredAt">,
+) => database.log.create({ data });

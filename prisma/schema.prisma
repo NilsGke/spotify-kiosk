@@ -37,6 +37,8 @@ model SpotifySession {
 
     createdAt DateTime @default(now())
 
+    Log Log[]
+
     @@index([adminId, code])
 }
 
@@ -79,6 +81,7 @@ model User {
     accounts       Account[]
     sessions       Session[]
     SpotifySession SpotifySession[]
+    Log            Log[]
 }
 
 model VerificationToken {
@@ -87,6 +90,25 @@ model VerificationToken {
     expires    DateTime
 
     @@unique([identifier, token])
+}
+
+model Log {
+    id                Int            @id @default(autoincrement())
+    type              LogType
+    sessionId         String
+    session           SpotifySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+    triggeredByUserId String?
+    triggeredBy       User?          @relation(fields: [triggeredByUserId], references: [id], onDelete: Cascade)
+    triggeredAt       DateTime       @default(now())
+    trackIds          String[]
+
+    @@index([sessionId])
+    @@index([triggeredByUserId])
+}
+
+enum LogType {
+    AddToQueue
+    Skip
 }
 
 enum Market {
