@@ -124,7 +124,7 @@ export const spotifyRouter = createTRPCRouter({
       if (error !== null) throw Error(error);
 
       return await spotifyApi.player
-        .getRecentlyPlayedTracks(10)
+        .getRecentlyPlayedTracks(15)
         .catch(
           reauthCatcherFactory(spotifySession.adminId, (spotifyApi) =>
             spotifyApi.player.getRecentlyPlayedTracks(10),
@@ -187,14 +187,14 @@ export const spotifyRouter = createTRPCRouter({
       if (deviceId === null)
         throw Error("device id is null. Maybe its not playing?");
 
-      await spotifyApi.player.skipToNext(deviceId);
-
       void addLog(ctx.db, {
         sessionId: spotifySession.id,
         trackIds: [playbackState.item.id],
         triggeredByUserId: ctx.session?.user.id ?? null,
         type: "Skip",
       });
+
+      await spotifyApi.player.skipToNext(deviceId);
     }),
 
   skipBackward: publicProcedure

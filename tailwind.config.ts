@@ -1,6 +1,7 @@
 import { type Config } from "tailwindcss";
 import { fontFamily } from "tailwindcss/defaultTheme";
 import tailwindScrollbarPlugin from "tailwind-scrollbar";
+import defaultTheme from "tailwindcss/defaultTheme";
 
 export default {
   content: ["./src/**/*.tsx"],
@@ -28,6 +29,7 @@ export default {
         },
       },
     },
+    screens: { "4xl": "2000px", ...defaultTheme.screens },
   },
   plugins: [tailwindScrollbarPlugin],
 } satisfies Config;

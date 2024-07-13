@@ -105,7 +105,7 @@ export default function Favourites({
   const [listRef] = useAutoAnimate();
 
   return (
-    <div className="row-span-2 h-full w-full max-w-xl rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6">
+    <div className="4xl:row-span-3 4xl:col-start-3 4xl:row-start-1 row-span-2 h-full w-full max-w-xl rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6">
       <h2 className="mb-3 h-[20px] text-center">
         your favourites <FaRegHeart className="inline-block" />
       </h2>
