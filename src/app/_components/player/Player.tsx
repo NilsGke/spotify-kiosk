@@ -68,7 +68,7 @@ export default function Player({
           );
           return false;
         },
-        refetchInterval: (playbackState, query) => {
+        refetchInterval: (playbackState) => {
           if (playbackState === null) return 4000;
           else return false;
         },
