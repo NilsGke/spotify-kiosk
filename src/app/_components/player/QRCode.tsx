@@ -28,7 +28,7 @@ export default function QRCode({
     const size = containerRef.current.clientHeight;
     void toCanvas(
       canvasRef.current,
-      `${env.NEXT_PUBLIC_APP_URL}/session/${session.code}`,
+      `${env.NEXT_PUBLIC_APP_URL}/s/${session.code}`,
       {
         margin: margin ?? 1,
         color: color ?? { dark: "#000", light: "#ddd" },
