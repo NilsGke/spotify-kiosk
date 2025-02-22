@@ -281,7 +281,7 @@ export default function TV({
             <div
               key={item.id}
               className={twMerge(
-                "mr-4 inline-block rounded p-1 backdrop-blur-3xl",
+                "mr-4 inline-block rounded-md p-1 backdrop-blur-3xl",
                 textColor === "white"
                   ? "backdrop-brightness-125"
                   : "backdrop-brightness-95",
