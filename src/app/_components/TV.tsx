@@ -131,15 +131,18 @@ export default function TV({
               .join(",\n")})`
           : `linear-gradient(
               295deg,
-              hsl(240deg 100% 20%) 0%,
-              hsl(289deg 100% 21%) 11%,
-              hsl(55deg 100% 50%) 100%
+              hsl(240deg 0% 20%) 0%,
+              hsl(289deg 0% 21%) 11%,
+              hsl(55deg 0% 50%) 100%
             )`,
       }}
     >
       {/* noise background */}
       <div
-        className="absolute left-0 top-0 h-screen w-screen opacity-[40%]"
+        className={twMerge(
+          "absolute left-0 top-0 h-screen w-screen opacity-[40%]",
+          textColor === "black" && "invert",
+        )}
         style={{
           backgroundImage: `url(${env.NEXT_PUBLIC_APP_URL}/noise.png)`,
           backgroundSize: "200px",
@@ -185,7 +188,7 @@ export default function TV({
                   ? textColor === "white"
                     ? "#fff"
                     : "#000"
-                  : "black",
+                  : "#000",
               light: "#0000",
             }}
             session={spotifySession}
