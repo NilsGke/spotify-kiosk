@@ -7,13 +7,12 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
-    POSTGRES_PRISMA_URL: z
-      .string()
-      .url()
-      .refine(
-        (str) => !str.includes("YOUR_MYSQL_URL_HERE"),
-        "You forgot to change the default URL",
-      ),
+    POSTGRES_PRISMA_URL: z.string().url().includes("pgbouncer=true", {
+      message:
+        "posgres url probably must have bgbouncer=true as a paramteter. This is enforced by the env schema.",
+    }),
+
+    POSGRES_DIRECT_URL: z.string().url(),
 
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -41,7 +40,6 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_APP_URL: z.string(),
     NEXT_PUBLIC_SPOTIFY_CLIENT_ID: z.string(),
-    NEXT_PUBLIC_SPOTIFY_AUTH_CALLBACK_URL: z.string(),
   },
 
   /**
@@ -50,6 +48,7 @@ export const env = createEnv({
    */
   runtimeEnv: {
     POSTGRES_PRISMA_URL: process.env.POSTGRES_PRISMA_URL,
+    POSGRES_DIRECT_URL: process.env.POSTGRES_DIRECT_URL,
     NODE_ENV: process.env.NODE_ENV,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
@@ -57,8 +56,6 @@ export const env = createEnv({
     SPOTIFY_CLIENT_SECRET: process.env.SPOTIFY_CLIENT_SECRET,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_SPOTIFY_CLIENT_ID: process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID,
-    NEXT_PUBLIC_SPOTIFY_AUTH_CALLBACK_URL:
-      process.env.NEXT_PUBLIC_SPOTIFY_AUTH_CALLBACK_URL,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
