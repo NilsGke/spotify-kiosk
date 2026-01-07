@@ -60,6 +60,7 @@ export default function TrackHistory({
             >
               <div className="text-xs text-zinc-500">{playedAt}</div>
               {image ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   className="aspect-square h-6 w-6 rounded-sm"
                   src={image.url}

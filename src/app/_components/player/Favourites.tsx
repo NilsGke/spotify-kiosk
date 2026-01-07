@@ -143,6 +143,7 @@ export default function Favourites({
                 className="grid w-full grid-cols-[35px_1fr_auto] items-center rounded p-1 text-sm hover:bg-zinc-800"
               >
                 {image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={image.url}
                     alt="album image"

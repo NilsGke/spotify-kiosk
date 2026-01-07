@@ -12,9 +12,9 @@ export default function getItemImage(
   let image: Image | undefined;
 
   if (itemIsTrack(item))
-    image = item.album.images.at(quality) || item.album.images.at(0);
+    image = item.album.images.at(quality) ?? item.album.images.at(0);
   else if (itemIsEpisode(item))
-    image = item.images.at(quality) || item.images.at(0);
+    image = item.images.at(quality) ?? item.images.at(0);
 
   if (image === undefined) return null;
   return image;

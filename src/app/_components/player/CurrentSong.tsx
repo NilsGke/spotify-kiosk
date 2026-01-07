@@ -38,6 +38,7 @@ export default function CurrentSong({
           {image === null ? (
             <FallbackImage className="p-6" />
           ) : (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={image.url} alt="track / episode art" />
           )}
         </div>

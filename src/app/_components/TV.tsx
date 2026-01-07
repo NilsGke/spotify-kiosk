@@ -300,9 +300,8 @@ export default function TV({
                   className="flex items-center gap-3 transition-colors"
                   style={{ color: textColor ?? "white" }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-
                   {image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={image.url}
                       alt="album / episode image"

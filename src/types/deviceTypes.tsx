@@ -1,7 +1,7 @@
 import { CgUsb } from "react-icons/cg";
 import { FaCar, FaChromecast } from "react-icons/fa";
 import { FiSmartphone, FiTablet, FiTv } from "react-icons/fi";
-import { IconType } from "react-icons/lib";
+import type { IconType } from "react-icons/lib";
 import { LuGamepad2, LuRadioReceiver } from "react-icons/lu";
 import { MdMusicVideo, MdOutlineSpeaker } from "react-icons/md";
 import { RiComputerLine } from "react-icons/ri";

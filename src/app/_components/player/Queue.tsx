@@ -152,6 +152,7 @@ function Item({
         {index !== undefined && index + 2}
       </div>
       {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           className="aspect-square h-6 w-6 rounded-sm"
           src={image?.url}

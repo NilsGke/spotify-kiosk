@@ -14,7 +14,7 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
-import { db } from "~/server/db";
+import type { db } from "~/server/db";
 import { spotifySessionCodeZod, spotifySessionPasswordZod } from "./session";
 import type { Log, SpotifySession, User } from "@prisma/client";
 import type { Session } from "next-auth";
