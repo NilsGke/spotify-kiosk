@@ -4,6 +4,8 @@ import type { Episode, PlaybackState, Track } from "@spotify/web-api-ts-sdk";
 import SlideDisplay from "../SlideDisplay";
 import { itemIsTrack } from "../../../helpers/itemTypeguards";
 import Heart from "../Heart";
+import getItemImage from "~/helpers/getItemImage";
+import FallbackImage from "../FallbackImage";
 
 type RealPlaybackState = Omit<PlaybackState, "item"> & {
   readonly item: Track | Episode | null;
@@ -27,18 +29,17 @@ export default function CurrentSong({
     );
 
   const image =
-    playbackState.item === null
-      ? null
-      : itemIsTrack(playbackState.item)
-        ? playbackState.item.album.images[0]
-        : playbackState.item.images[0];
+    playbackState.item === null ? null : getItemImage(playbackState.item, 0);
 
   return (
     <>
       <div className="grid grid-cols-[8rem,auto] gap-3 sm:grid-cols-2 md:grid-cols-1 lg:grid-rows-1">
         <div className="inline-block aspect-square size-32 overflow-hidden rounded-lg bg-zinc-800 md:size-auto lg:h-auto lg:w-full">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          {image && <img src={image.url} alt="track / episode art" />}
+          {image === null ? (
+            <FallbackImage className="p-6" />
+          ) : (
+            <img src={image.url} alt="track / episode art" />
+          )}
         </div>
         <div>
           <SlideDisplay className="text-3xl lg:w-full" onlyOnHover>

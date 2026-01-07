@@ -5,6 +5,8 @@ import { twMerge } from "tailwind-merge";
 import { useEffect, useState } from "react";
 import { api } from "~/trpc/react";
 import { useSignal } from "~/helpers/signals";
+import getItemImage from "~/helpers/getItemImage";
+import FallbackImage from "../FallbackImage";
 
 export default function Queue({
   code,
@@ -129,9 +131,7 @@ function Item({
       <div className="h-8 w-full animate-pulse rounded bg-zinc-800 p-2"></div>
     );
 
-  const isTrack = itemIsTrack(data);
-
-  const image = isTrack ? data.album.images.at(-1) : data.images.at(-1);
+  const image = getItemImage(data);
 
   let lengthString = new Date(data.duration_ms).toISOString().slice(11, 19);
   if (lengthString.startsWith("00:")) lengthString = lengthString.slice(3, 8);
@@ -151,14 +151,17 @@ function Item({
       <div className="text-sm text-zinc-500">
         {index !== undefined && index + 2}
       </div>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        className="aspect-square h-6 w-6 rounded-sm"
-        src={image?.url}
-        height={image?.height}
-        width={image?.width}
-        alt="album image"
-      />
+      {image ? (
+        <img
+          className="aspect-square h-6 w-6 rounded-sm"
+          src={image?.url}
+          height={image?.height}
+          width={image?.width}
+          alt="album image"
+        />
+      ) : (
+        <FallbackImage className="aspect-square h-6 w-6 rounded-sm p-0.5" />
+      )}
       <div className="inline-block overflow-hidden overflow-ellipsis whitespace-nowrap">
         {data.name}
       </div>

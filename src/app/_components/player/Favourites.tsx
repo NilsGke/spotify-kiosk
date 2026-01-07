@@ -9,6 +9,7 @@ import type { SpotifySession } from "@prisma/client";
 import { sendSignal, useSignal } from "~/helpers/signals";
 import LoginButton from "../LoginButton";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import FallbackImage from "../FallbackImage";
 
 const limit = 9;
 
@@ -105,7 +106,7 @@ export default function Favourites({
   const [listRef] = useAutoAnimate();
 
   return (
-    <div className="4xl:row-span-3 4xl:col-start-3 4xl:row-start-1 row-span-2 h-full w-full max-w-xl rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6">
+    <div className="row-span-2 h-full w-full max-w-xl rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6 4xl:col-start-3 4xl:row-span-3 4xl:row-start-1">
       <h2 className="mb-3 h-[20px] text-center">
         your favourites <FaRegHeart className="inline-block" />
       </h2>
@@ -122,7 +123,7 @@ export default function Favourites({
               removed.every((t2) => t1.track.id !== t2.id),
             ),
           ]?.map(({ track }) => {
-            const image = getItemImage(track, 2);
+            const image = getItemImage(track, 0);
             return (
               <button
                 key={track.id}
@@ -141,18 +142,21 @@ export default function Favourites({
                 }}
                 className="grid w-full grid-cols-[35px_1fr_auto] items-center rounded p-1 text-sm hover:bg-zinc-800"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={image.url}
-                  alt="album image"
-                  className="size-6 rounded-sm"
-                />
+                {image ? (
+                  <img
+                    src={image.url}
+                    alt="album image"
+                    className="size-6 rounded-sm"
+                  />
+                ) : (
+                  <FallbackImage className="size-6 rounded-sm p-0.5" />
+                )}
                 <div className="truncate text-start text-xs">{track.name}</div>
               </button>
             );
           })}
         {(isLoading || isFetching) &&
-          [...Array(limit).keys()].map((v, i) => (
+          [...Array(limit).keys()].map((_v, i) => (
             <div
               key={i}
               className="mb-2 h-6 w-full animate-pulse bg-zinc-800"

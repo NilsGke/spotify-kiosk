@@ -6,6 +6,7 @@ import getItemImage from "~/helpers/getItemImage";
 import { api } from "~/trpc/react";
 import { sendSignal, useSignal } from "~/helpers/signals";
 import ControlledHeart from "./ControlledHeart";
+import FallbackImage from "../FallbackImage";
 
 export default function TrackHistory({
   history,
@@ -23,7 +24,7 @@ export default function TrackHistory({
   useSignal("updateLikes", () => void refetchSavedTracks());
 
   return (
-    <div className="4xl:row-span-2 h-full w-full max-w-xl rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6">
+    <div className="h-full w-full max-w-xl rounded-lg border border-zinc-800 bg-zinc-900 p-1 sm:p-3 md:p-5 lg:p-6 4xl:row-span-2">
       <h2 className="mb-3 h-[20px] text-center">Track History</h2>
       <div
         ref={listRef}
@@ -44,7 +45,7 @@ export default function TrackHistory({
             savedTracksData?.find((track) => track.id === item.track.id);
           const savedTrack = savedTrackData?.saved;
 
-          const image = getItemImage(item.track, 2);
+          const image = getItemImage(item.track, 0);
           const playedAt = new Date(item.played_at).toLocaleTimeString(
             undefined,
             {
@@ -58,14 +59,17 @@ export default function TrackHistory({
               className="group grid w-full grid-cols-[50px_35px_1fr_50px] items-center rounded p-1 text-sm hover:bg-zinc-800"
             >
               <div className="text-xs text-zinc-500">{playedAt}</div>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                className="aspect-square h-6 w-6 rounded-sm"
-                src={image.url}
-                height={image?.height}
-                width={image?.width}
-                alt="album image"
-              />
+              {image ? (
+                <img
+                  className="aspect-square h-6 w-6 rounded-sm"
+                  src={image.url}
+                  height={image?.height}
+                  width={image?.width}
+                  alt="album image"
+                />
+              ) : (
+                <FallbackImage className="aspect-square size-6 rounded-sm p-0.5" />
+              )}
               <div className="inline-block overflow-hidden overflow-ellipsis whitespace-nowrap text-xs">
                 {item.track.name}
               </div>

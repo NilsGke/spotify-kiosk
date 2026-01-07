@@ -14,6 +14,7 @@ import { useAutoAnimate } from "@formkit/auto-animate/react";
 import Link from "next/link";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import QRCode from "./player/QRCode";
+import FallbackImage from "./FallbackImage";
 
 type HEX = `#${string}`;
 const mouseMoveTime = 1000;
@@ -252,13 +253,15 @@ export default function TV({
             />
           )}
           {/* album image */}
-          {image && (
+          {image ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               className="absolute top-0 z-10 size-full rounded-xl "
               src={image.url}
               alt="album / episode art"
             />
+          ) : (
+            <FallbackImage className="size-full rounded-xl p-6" />
           )}
         </div>
         <h2
@@ -280,30 +283,39 @@ export default function TV({
       {/* Queue bar */}
       <div className="absolute bottom-0 w-full overflow-x-hidden p-3">
         <div className="w-[10000%]" ref={queueRef}>
-          {queue?.queue.map((item) => (
-            <div
-              key={item.id}
-              className={twMerge(
-                "mr-4 inline-block rounded-md p-1 backdrop-blur-3xl",
-                textColor === "white"
-                  ? "backdrop-brightness-125"
-                  : "backdrop-brightness-95",
-              )}
-            >
+          {queue?.queue.map((item) => {
+            const image = getItemImage(item, 2);
+
+            return (
               <div
-                className=" flex items-center gap-3 transition-colors"
-                style={{ color: textColor ?? "white" }}
+                key={item.id}
+                className={twMerge(
+                  "mr-4 inline-block rounded-md p-1 backdrop-blur-3xl",
+                  textColor === "white"
+                    ? "backdrop-brightness-125"
+                    : "backdrop-brightness-95",
+                )}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={getItemImage(item, 2).url}
-                  alt="album / episode image"
-                  className="aspect-square h-6 rounded"
-                />
-                {item.name}
+                <div
+                  className="flex items-center gap-3 transition-colors"
+                  style={{ color: textColor ?? "white" }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+
+                  {image ? (
+                    <img
+                      src={image.url}
+                      alt="album / episode image"
+                      className="aspect-square h-6 rounded"
+                    />
+                  ) : (
+                    <FallbackImage className="aspect-square h-6 rounded" />
+                  )}
+                  {item.name}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
